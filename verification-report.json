@@ -1,0 +1,48 @@
+{
+  "systems": [
+    {
+      "system": "Egg Spinning & Pet Index System",
+      "documents": 1,
+      "renders": 1,
+      "blend_scenes": 1
+    },
+    {
+      "system": "Mini-Field & Egg Rush PvP System",
+      "documents": 1,
+      "renders": 1,
+      "blend_scenes": 1
+    },
+    {
+      "system": "Pet Collection & Progression System",
+      "documents": 1,
+      "renders": 1,
+      "blend_scenes": 1
+    },
+    {
+      "system": "Robux Shop & Permanent Upgrade System",
+      "documents": 1,
+      "renders": 1,
+      "blend_scenes": 1
+    },
+    {
+      "system": "Treasure Farming & Economy System",
+      "documents": 1,
+      "renders": 1,
+      "blend_scenes": 1
+    },
+    {
+      "system": "Weather Events & Mutation System",
+      "documents": 1,
+      "renders": 1,
+      "blend_scenes": 1
+    },
+    {
+      "system": "World & Biome Progression System",
+      "documents": 1,
+      "renders": 1,
+      "blend_scenes": 1
+    }
+  ],
+  "errors": [],
+  "status": "PASS"
+}

@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "scenes": [
+    {
+      "scene": "game-system-overview\\Egg Spinning & Pet Index System\\images\\egg-plaza.blend",
+      "objects": 60,
+      "meshes": 45,
+      "lights": 3,
+      "camera": true
+    },
+    {
+      "scene": "game-system-overview\\Mini-Field & Egg Rush PvP System\\images\\egg-rush.blend",
+      "objects": 72,
+      "meshes": 55,
+      "lights": 3,
+      "camera": true,
+      "verified_egg_boxes": 10
+    },
+    {
+      "scene": "game-system-overview\\Pet Collection & Progression System\\images\\pet-progression.blend",
+      "objects": 171,
+      "meshes": 155,
+      "lights": 3,
+      "camera": true
+    },
+    {
+      "scene": "game-system-overview\\Robux Shop & Permanent Upgrade System\\images\\upgrade-shop.blend",
+      "objects": 78,
+      "meshes": 71,
+      "lights": 3,
+      "camera": true
+    },
+    {
+      "scene": "game-system-overview\\Treasure Farming & Economy System\\images\\treasure-farming.blend",
+      "objects": 205,
+      "meshes": 196,
+      "lights": 3,
+      "camera": true
+    },
+    {
+      "scene": "game-system-overview\\Weather Events & Mutation System\\images\\weather-mutations.blend",
+      "objects": 183,
+      "meshes": 171,
+      "lights": 3,
+      "camera": true
+    },
+    {
+      "scene": "game-system-overview\\World & Biome Progression System\\images\\forest-world.blend",
+      "objects": 173,
+      "meshes": 162,
+      "lights": 3,
+      "camera": true
+    }
+  ]
+}

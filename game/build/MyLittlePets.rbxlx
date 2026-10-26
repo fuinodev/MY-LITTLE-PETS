@@ -1,0 +1,1591 @@
+<?xml version='1.0' encoding='utf-8'?>
+<roblox version="4">
+  <External>null</External>
+  <External>nil</External>
+  <Item class="Workspace">
+    <Properties>
+      <string name="Name">Workspace</string>
+    </Properties>
+  </Item>
+  <Item class="ReplicatedStorage">
+    <Properties>
+      <string name="Name">ReplicatedStorage</string>
+    </Properties>
+    <Item class="Folder">
+      <Properties>
+        <string name="Name">MyLittlePets</string>
+      </Properties>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">Config</string>
+          <ProtectedString name="Source">local C={Version=2,MaxPets=200,EquipSlots=3,StudioUseDataStore=false,DataStoreName="MyLittlePets_Profile_v2",InventoryRevision=2}
+C.Rarities={"Common","Uncommon","Rare","Epic","Legendary","Mythic","Eternal","Heroic","Divine","EXCLUSIVE"}
+C.Colors={Color3.fromRGB(188,207,220),Color3.fromRGB(73,207,111),Color3.fromRGB(48,164,249),Color3.fromRGB(165,79,239),Color3.fromRGB(255,169,44),Color3.fromRGB(238,63,75),Color3.fromRGB(101,44,210),Color3.fromRGB(250,232,192),Color3.fromRGB(255,211,39),Color3.fromRGB(90,240,211)}
+C.Rates={"10000","50000","250000","1000000","5000000","25000000","125000000","600000000","1700000000","20000000000"}
+C.Weights={45,30,15,7,2,.8,.15,.05,0,0}
+C.Sectors={"Forest Entrance","Green Clearing","Deep Woods","Ancient Grove","Forest Gateway"}
+C.Gates={"0","2000000","20000000","200000000","2000000000"}
+C.EggCost="250000"
+C.Biomes={"Forest","River","Desert","Ice","Volcanic"}
+C.Origin={Forest=1,River=2,Desert=4,Ice=8,Volcanic=16}
+C.Variants={Normal=1,Silver=3,Gold=7,Diamond=15,Rainbow=30}
+C.Foods={{Id="Apple",Name="Apple",Cost="100000",XP=100},{Id="Fish",Name="Fish",Cost="500000",XP=500},{Id="GoldenFruit",Name="Golden Fruit",Cost="2500000",XP=2500},{Id="MysticTreat",Name="Mystic Treat",Cost="10000000",XP=10000}}
+C.Weather={{Name="Rainy",Mutation="Soaked",Factor=1.5,Weight=40,Color=Color3.fromRGB(86,176,238)},{Name="Snowstorm",Mutation="Frozen",Factor=2.5,Weight=25,Color=Color3.fromRGB(190,237,255)},{Name="Thunderstorm",Mutation="Thunderstruck",Factor=4,Weight=18,Color=Color3.fromRGB(174,102,255)},{Name="Rage",Mutation="Enraged",Factor=7,Weight=10,Color=Color3.fromRGB(255,95,46)},{Name="Meteor Shower",Mutation="Celestial",Factor=12,Weight=5,Color=Color3.fromRGB(107,148,240)},{Name="Aurora",Mutation="Astral",Factor=25,Weight=2,Color=Color3.fromRGB(110,249,207)}}
+C.Boosters={{Id="Basic",Name="Basic Lucky",Bonus=.05,ProductId=0},{Id="Super",Name="Super Lucky",Bonus=.15,ProductId=0},{Id="Ultra",Name="Ultra Lucky",Bonus=.25,ProductId=0}}
+C.Targets={{Name="Small Coin Pile",Work="100000",Respawn=3,Count=6},{Name="Large Coin Pile",Work="500000",Respawn=5,Count=11},{Name="Giant Coin Hoard",Work="2000000",Respawn=8,Count=18},{Name="Wooden Chest",Work="10000000",Respawn=12,Count=0}}
+C.Upgrades={} for i,price in ipairs({2,5,9,15,25,39,59,89,129,179,249,349}) do C.Upgrades[i]={Tier=i,Multiplier=2^i,TargetPrice=price,PassId=0} end
+C.FutureCaps={Forest=4096,River=16384,Desert=65536,Ice=262144,Volcanic=1048576}
+-- Product decisions without approved values stay disabled. Never invent checkout IDs or paid prices.
+C.Divine={Enabled=false,DailyLimit=0}
+C.Weekly={Enabled=false,Weekday=1,HourUTC=0,Chance=0}
+C.PremiumProducts={}
+C.Rush={Interval=1200,Registration=30,Countdown=5,Duration=60,Results=5,Speed=16,Range=6,Cooldown=.8,Grace=.5,Hold=.75}
+C.Species={}
+local groups={{"Forest Fox","Meadow Bunny","Acorn Mouse","Moss Chick","Twig Pup"},{"Leaf Cat","Clover Deer","Fern Frog","Sprout Owl","Hedgehog Scout"},{"Azure Jay","Crystal Badger","Riverbank Otter","Sapphire Squirrel"},{"Mystic Owl","Mooncap Cat","Orchid Moth","Rune Wolf"},{"Amber Griffin","Suncrest Lion","Ancient Stag"},{"Ember Imp","Crimson Drake","Thorn Phoenix"},{"Twilight Lynx","Void Raven"},{"Halo Hound","Pearl Pegasus"},{"Golden Dragon","Crowned Seraph"}}
+for r,names in ipairs(groups) do for _,name in ipairs(names) do
+ local i=#C.Species+1 local base=C.Colors[r]
+ if r==1 then base=({Color3.fromRGB(224,126,63),Color3.fromRGB(233,223,216),Color3.fromRGB(173,142,116),Color3.fromRGB(235,207,92),Color3.fromRGB(162,114,77)})[i] end
+ table.insert(C.Species,{Id=string.format("forest_%02d",i),Name=name,Rarity=r,Color=base,Rate=C.Rates[r],Biome="Forest"})
+end end
+function C.MutationFactor(pet)
+ local factor=1 for _,id in ipairs(pet.Mutations or {}) do for _,w in ipairs(C.Weather) do if w.Mutation==id then factor+=w.Factor-1 end end end return factor
+end
+function C.Power(pet,tier,B)
+ local s=C.Species[pet.Species] local n=s.Rate
+ n=B.MulSmall(n,C.Origin[pet.Origin or s.Biome] or 1) n=B.MulSmall(n,C.Variants[pet.Variant or "Normal"] or 1)
+ n=B.Div(B.MulSmall(n,math.floor(C.MutationFactor(pet)*100)),"100")
+ n=B.Div(B.MulSmall(n,99+pet.Level),"100")
+ for _=1,tier or 0 do n=B.MulSmall(n,2) end return n
+end
+function C.Validate()
+ assert(#C.Species==30,"Forest roster") local counts={} local sum=0 local prices=0 local ids={}
+ for _,s in ipairs(C.Species) do counts[s.Rarity]=(counts[s.Rarity] or 0)+1 assert(not ids[s.Id],"Species IDs") ids[s.Id]=true end
+ for i,n in ipairs({5,5,4,4,3,3,2,2,2}) do assert(counts[i]==n,"Rarity distribution") end
+ for _,v in ipairs(C.Weights) do assert(v&gt;=0) sum+=v end assert(math.abs(sum-100)&lt;.000001 and C.Weights[9]==0 and C.Weights[10]==0)
+ for i,u in ipairs(C.Upgrades) do assert(u.Multiplier==2^i) prices+=u.TargetPrice end assert(prices==1149)
+end
+C.Validate()
+return C
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">BigNum</string>
+          <ProtectedString name="Source">-- Non-negative arbitrary precision integer arithmetic; wallet and rate wire format is decimal text.
+local B={}
+function B.N(v)
+ local s=type(v)=="number" and string.format("%.0f",v) or tostring(v)
+ assert(s:match("^%d+$") and #s&lt;=400,"Invalid unsigned decimal")
+ return s:gsub("^0+","")=="" and "0" or (s:gsub("^0+",""))
+end
+function B.Cmp(a,b) a=B.N(a) b=B.N(b) if #a~=#b then return #a&gt;#b and 1 or -1 end if a==b then return 0 end return a&gt;b and 1 or -1 end
+function B.Add(a,b)
+ a=B.N(a) b=B.N(b) local out={} local carry=0 local i=#a local j=#b
+ while i&gt;0 or j&gt;0 or carry&gt;0 do local n=(i&gt;0 and tonumber(a:sub(i,i)) or 0)+(j&gt;0 and tonumber(b:sub(j,j)) or 0)+carry table.insert(out,1,tostring(n%10)) carry=math.floor(n/10) i-=1 j-=1 end
+ return table.concat(out)
+end
+function B.Sub(a,b)
+ a=B.N(a) b=B.N(b) assert(B.Cmp(a,b)&gt;=0,"Negative balance") local out={} local borrow=0 local j=#b
+ for i=#a,1,-1 do local n=tonumber(a:sub(i,i))-(j&gt;0 and tonumber(b:sub(j,j)) or 0)-borrow borrow=0 if n&lt;0 then n+=10 borrow=1 end table.insert(out,1,tostring(n)) j-=1 end return B.N(table.concat(out))
+end
+function B.MulSmall(a,n)
+ assert(n&gt;=0 and n%1==0 and n&lt;=1e9) a=B.N(a) if n==0 then return "0" end local carry=0 local out={}
+ for i=#a,1,-1 do local v=tonumber(a:sub(i,i))*n+carry table.insert(out,1,tostring(v%10)) carry=math.floor(v/10) end
+ while carry&gt;0 do table.insert(out,1,tostring(carry%10)) carry=math.floor(carry/10) end return B.N(table.concat(out))
+end
+function B.Mul(a,b)
+ a=B.N(a) b=B.N(b) local result="0"
+ for i=1,#b do result=B.Add(result.."0",B.MulSmall(a,tonumber(b:sub(i,i)))) end return B.N(result)
+end
+function B.Div(a,b)
+ a=B.N(a) b=B.N(b) assert(b~="0","Division by zero") local rem="0" local out={}
+ for i=1,#a do
+  rem=B.N(rem..a:sub(i,i)) local lo,hi=0,9
+  while lo&lt;hi do local mid=math.ceil((lo+hi)/2) if B.Cmp(B.MulSmall(b,mid),rem)&lt;=0 then lo=mid else hi=mid-1 end end
+  table.insert(out,tostring(lo)) rem=B.Sub(rem,B.MulSmall(b,lo))
+ end return B.N(table.concat(out)),rem
+end
+function B.Min(a,b) return B.Cmp(a,b)&lt;=0 and a or b end
+function B.Format(n)
+ n=B.N(n) local suffix={"","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc"} local tier=math.floor((#n-1)/3)
+ if tier==0 then return n end if tier&gt;=#suffix then return n:sub(1,1).."."..n:sub(2,3).."e"..(#n-1) end
+ local len=#n-tier*3 local decimal=n:sub(len+1,len+1) return n:sub(1,len)..(decimal~="0" and "."..decimal or "")..suffix[tier+1]
+end
+function B.Score(n) n=B.N(n) if n=="0" then return 0 end return #n*1000000+math.floor(tonumber(n:sub(1,6)..string.rep("0",math.max(0,6-#n)))) end
+return B
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">Assets</string>
+          <ProtectedString name="Source">-- Shared editable toy geometry, built from Roblox primitives; no external mesh or texture dependencies.
+local A={}
+function A.Part(parent,name,size,cf,color,shape)
+ local p=Instance.new("Part") p.Name=name p.Size=size p.CFrame=typeof(cf)=="CFrame" and cf or CFrame.new(cf) p.Anchored=true p.CanCollide=false p.CanTouch=false p.Material=Enum.Material.SmoothPlastic p.Color=color p.TopSurface=Enum.SurfaceType.Smooth p.BottomSurface=Enum.SurfaceType.Smooth
+ if shape==Enum.PartType.Ball then local mesh=Instance.new("SpecialMesh") mesh.MeshType=Enum.MeshType.Sphere mesh.Parent=p elseif shape then p.Shape=shape end p.Parent=parent return p
+end
+function A.Wedge(parent,name,size,cf,color)
+ local p=Instance.new("WedgePart") p.Name=name p.Size=size p.CFrame=cf p.Color=color p.Anchored=true p.CanCollide=false p.CanTouch=false p.Material=Enum.Material.SmoothPlastic p.Parent=parent return p
+end
+function A.Cylinder(parent,name,radius,height,cf,color)
+ return A.Part(parent,name,Vector3.new(height,radius*2,radius*2),cf*CFrame.Angles(0,0,math.pi/2),color,Enum.PartType.Cylinder)
+end
+function A.Label(part,text,width,height,offset,max)
+ local g=Instance.new("BillboardGui") g.Name="Label" g.Size=UDim2.fromOffset(width or 180,height or 40) g.StudsOffset=Vector3.new(0,offset or 4,0) g.MaxDistance=max or 70 g.AlwaysOnTop=false g.Parent=part
+ local l=Instance.new("TextLabel") l.BackgroundTransparency=1 l.Size=UDim2.fromScale(1,1) l.Text=text l.TextColor3=Color3.fromRGB(255,249,222) l.TextStrokeColor3=Color3.fromRGB(36,59,52) l.TextStrokeTransparency=.25 l.Font=Enum.Font.GothamBold l.TextSize=16 l.TextWrapped=true l.Parent=g return l
+end
+function A.Face(part,text,color,face)
+ local g=Instance.new("SurfaceGui") g.Name="SignFace" g.Face=face or Enum.NormalId.Front g.SizingMode=Enum.SurfaceGuiSizingMode.PixelsPerStud g.PixelsPerStud=35 g.Parent=part
+ local t=Instance.new("TextLabel") t.Size=UDim2.new(1,-12,1,-8) t.Position=UDim2.fromOffset(6,4) t.BackgroundTransparency=1 t.Font=Enum.Font.GothamBold t.TextScaled=true t.TextColor3=color or Color3.fromRGB(255,248,214) t.Text=text t.TextWrapped=true t.Parent=g return t
+end
+function A.Prompt(part,text,object,hold,distance)
+ local p=Instance.new("ProximityPrompt") p.ActionText=text p.ObjectText=object p.HoldDuration=hold or 0 p.MaxActivationDistance=distance or 12 p.RequiresLineOfSight=false p.Parent=part return p
+end
+function A.Particles(parent,color,rate)
+ local e=Instance.new("ParticleEmitter") e.Color=ColorSequence.new(color) e.LightEmission=.5 e.Rate=rate or 2 e.Lifetime=NumberRange.new(.6,1.4) e.Speed=NumberRange.new(.3,1) e.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,.12),NumberSequenceKeypoint.new(1,0)}) e.SpreadAngle=Vector2.new(180,180) e.Parent=parent return e
+end
+function A.Pet(species,pet,C)
+ pet=pet or {Variant="Normal",Mutations={},Size="Normal",Level=1}
+ local m=Instance.new("Model") m.Name=species.Name local color=species.Color local r=species.Rarity local gold=Color3.fromRGB(255,205,60) local pale=Color3.fromRGB(255,242,211)
+ if pet.Variant=="Silver" then color=Color3.fromRGB(195,207,218) elseif pet.Variant=="Gold" then color=gold elseif pet.Variant=="Diamond" then color=Color3.fromRGB(123,222,255) elseif pet.Variant=="Rainbow" then color=Color3.fromRGB(240,128,232) end
+ local function p(n,s,pos,c,shape) return A.Part(m,n,s,CFrame.new(pos),c,shape) end
+ local body=p("Body",Vector3.new(2.7,2.7,2.7),Vector3.zero,color) m.PrimaryPart=body
+ if pet.Variant=="Silver" or pet.Variant=="Gold" then body.Material=Enum.Material.Metal elseif pet.Variant=="Diamond" then body.Material=Enum.Material.Glass body.Reflectance=.15 end
+ local name=species.Name:lower()
+ local bird=name:find("owl") or name:find("jay") or name:find("raven") or name:find("chick") or name:find("phoenix")
+ for side=-1,1,2 do
+  p("EyeWhite",Vector3.new(.78,.94,.26),Vector3.new(side*.65,.25,-1.34),Color3.new(1,1,1),Enum.PartType.Ball)
+  p("Pupil",Vector3.new(.4,.62,.18),Vector3.new(side*.65,.23,-1.5),Color3.fromRGB(29,40,48),Enum.PartType.Ball)
+  p("EyeShine",Vector3.new(.13,.19,.08),Vector3.new(side*.65-.07,.39,-1.61),Color3.new(1,1,1),Enum.PartType.Ball)
+  p("TinyFoot",Vector3.new(.64,.36,.78),Vector3.new(side*.78,-1.47,-.55),bird and gold or color:Lerp(pale,.25))
+  if bird then
+   local wing=p("Wing",Vector3.new(.45,1.2,1.25),Vector3.new(side*1.43,-.1,.1),color:Lerp(pale,.2)) wing.Orientation=Vector3.new(0,0,side*12)
+  else
+   local tall=name:find("bunny") and 1.65 or .85
+   local ear=p("Ear",Vector3.new(.68,tall,.6),Vector3.new(side*.88,1.38+tall*.3,0),color)
+   p("InnerEar",Vector3.new(.35,tall*.65,.08),ear.Position+Vector3.new(0,0,-.32),Color3.fromRGB(241,162,167))
+  end
+ end
+ if bird then
+  A.Wedge(m,"Beak",Vector3.new(.5,.5,.6),CFrame.new(0,-.35,-1.62)*CFrame.Angles(math.pi/2,0,0),gold)
+ else
+  p("Muzzle",Vector3.new(1.2,.65,.17),Vector3.new(0,-.55,-1.37),pale,Enum.PartType.Ball)
+  p("Nose",Vector3.new(.35,.22,.18),Vector3.new(0,-.34,-1.56),Color3.fromRGB(90,55,55),Enum.PartType.Ball)
+  local smile=p("Smile",Vector3.new(.37,.06,.08),Vector3.new(0,-.7,-1.48),Color3.fromRGB(76,57,57))
+ end
+ if name:find("fox") or name:find("cat") or name:find("wolf") or name:find("lynx") or name:find("pup") or name:find("hound") then
+  local tail=p("Tail",Vector3.new(.65,.65,1.6),Vector3.new(.8,-.7,1.9),color) tail.Orientation=Vector3.new(-20,25,0)
+  p("TailTip",Vector3.new(.67,.67,.55),Vector3.new(1.1,-.4,2.55),pale)
+ end
+ if name:find("deer") or name:find("stag") or name:find("dragon") or name:find("drake") or name:find("imp") then
+  for side=-1,1,2 do local horn=p("Horn",Vector3.new(.28,1.1,.28),Vector3.new(side*.9,1.9,.4),gold) horn.Orientation=Vector3.new(-12,0,side*-20)
+   if name:find("deer") or name:find("stag") then p("Antler",Vector3.new(.6,.2,.2),Vector3.new(side*1.04,2,.4),gold) end
+  end
+ end
+ if name:find("moth") or name:find("dragon") or name:find("pegasus") or name:find("seraph") or name:find("griffin") or name:find("phoenix") then
+  for side=-1,1,2 do
+   for i=1,3 do local wing=p("WingFeather",Vector3.new(.9,.36,1.4),Vector3.new(side*(1.4+i*.22),.5-i*.2,.3+i*.15),r&gt;=8 and pale or color:Lerp(pale,.3)) wing.Orientation=Vector3.new(0,side*25,side*30) end
+  end
+ end
+ if name:find("hedgehog") or name:find("badger") then for i=1,5 do A.Wedge(m,"Spine",Vector3.new(.5,.65,.7),CFrame.new(-1.1+i*.38,1.55,.6),color:Lerp(Color3.fromRGB(63,73,76),.4)) end end
+ if r==4 then
+  A.Cylinder(m,"HatBrim",1.1,.13,CFrame.new(0,1.65,0),Color3.fromRGB(80,45,116))
+  local hat=p("WizardHat",Vector3.new(1,1.1,1),Vector3.new(0,2.17,0),Color3.fromRGB(91,50,143)) hat.Orientation=Vector3.new(0,0,-12)
+  p("HatStar",Vector3.new(.22,.3,.1),Vector3.new(0,2.17,-.56),gold)
+ elseif r&gt;=5 then
+  for i=1,5 do local a=i*math.pi*2/5 local q=p("Crown",Vector3.new(.26,.55,.26),Vector3.new(math.sin(a)*.77,1.64,math.cos(a)*.77),gold) q.Material=Enum.Material.Metal end
+ end
+ if r&gt;=8 then
+  for i=1,12 do local a=i*math.pi/6 local h=p("Halo",Vector3.new(.5,.13,.24),Vector3.new(math.sin(a)*1.05,2.3,math.cos(a)*1.05),gold) h.Orientation=Vector3.new(0,-math.deg(a),0) h.Material=Enum.Material.Neon end
+ end
+ for _,id in ipairs(pet.Mutations or {}) do
+  for _,w in ipairs(C.Weather) do if id==w.Mutation then
+   A.Particles(body,w.Color,2)
+   if id=="Soaked" then for i=1,3 do p("Droplet",Vector3.new(.16,.35,.13),Vector3.new(-1+i*.5,.65-i*.25,-1.45),w.Color,Enum.PartType.Ball) end
+   elseif id=="Frozen" then for side=-1,1,2 do local ice=A.Wedge(m,"FrostCrystal",Vector3.new(.45,.85,.45),CFrame.new(side*1.25,1.5,.5),w.Color) ice.Material=Enum.Material.Glass end
+   elseif id=="Thunderstruck" then for i=1,3 do local spark=p("ElectricArc",Vector3.new(.12,.55,.12),Vector3.new(1.5,.9-i*.45,-.8),w.Color) spark.Orientation=Vector3.new(0,0,i%2==0 and 35 or -35) spark.Material=Enum.Material.Neon end
+   elseif id=="Enraged" then for side=-1,1,2 do local flame=A.Wedge(m,"Flame",Vector3.new(.45,.8,.4),CFrame.new(side*1.4,-.6,.4),w.Color) flame.Material=Enum.Material.Neon end
+   elseif id=="Celestial" then for i=1,3 do local star=p("StarFragment",Vector3.new(.24,.24,.24),Vector3.new(-1+i*.5,1.6,.4),w.Color) star.Orientation=Vector3.new(30,0,45) star.Material=Enum.Material.Neon end
+   elseif id=="Astral" then for i=1,6 do local a=i*math.pi/3 local ribbon=p("AuroraRibbon",Vector3.new(.65,.12,.18),Vector3.new(math.sin(a)*1.65,.5+math.cos(a)*.3,math.cos(a)*1.65),w.Color) ribbon.Orientation=Vector3.new(0,-math.deg(a),10) ribbon.Material=Enum.Material.Neon end end
+  end end
+ end
+ if pet.Variant=="Rainbow" or r==10 then body:SetAttribute("Rainbow",true) A.Particles(body,Color3.fromRGB(255,139,231),3) end
+ if pet.Level&gt;=50 then p("Scarf",Vector3.new(2.76,.3,2.76),Vector3.new(0,-.9,0),gold) end
+ if pet.Size=="Huge" then m:ScaleTo(2.2) end
+ return m
+end
+function A.Bat(r,C,tool)
+ local m=tool and Instance.new("Tool") or Instance.new("Model") m.Name=tool and "Forest Bat" or C.Rarities[r].." Bat"
+ if tool then m.CanBeDropped=false end
+ local brown=Color3.fromRGB(124,78,41) local col=C.Colors[r] local base=Vector3.zero
+ local handle=A.Part(m,"Handle",Vector3.new(.42,3.8,.42),CFrame.new(),r&gt;=8 and Color3.fromRGB(242,232,201) or brown,Enum.PartType.Cylinder)
+ handle.Orientation=Vector3.new(0,0,90) handle.Anchored=not tool handle.Massless=true
+ local barrel=A.Part(m,"Barrel",Vector3.new(.8,2.2,.8),CFrame.new(0,1.4,0),r==1 and brown or col,Enum.PartType.Cylinder) barrel.Orientation=Vector3.new(0,0,90)
+ for i=1,3 do
+  local leaf=A.Part(m,"Leaf",Vector3.new(.38,.65,.14),CFrame.new((i%2==0 and 1 or -1)*.38,.3+i*.55,0)*CFrame.Angles(0,0,i%2==0 and -.6 or .6),r&lt;=2 and Color3.fromRGB(75,161,67) or col)
+ end
+ if r&gt;=3 then for i=1,3 do local q=A.Wedge(m,"Crystal",Vector3.new(.4,.7,.4),CFrame.new((i-2)*.35,2.6,0),col) q.Material=Enum.Material.Neon end end
+ if r&gt;=4 then A.Particles(barrel,col,2) end
+ if tool then
+  for _,p in ipairs(m:GetDescendants()) do if p:IsA("BasePart") then p.Anchored=false p.Massless=true if p~=handle then local weld=Instance.new("WeldConstraint") weld.Part0=handle weld.Part1=p weld.Parent=p end end end
+ else m.PrimaryPart=handle end return m
+end
+return A
+
+
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">HUD</string>
+          <ProtectedString name="Source">-- Code-drawn icon HUD based on the user's colorful simulator toolbar reference.
+local H={}
+local Tween=game:GetService("TweenService")
+local dark=Color3.fromRGB(35,36,67)
+local colors={Pets=Color3.fromRGB(109,225,94),Index=Color3.fromRGB(79,207,255),Food=Color3.fromRGB(255,186,98),Shop=Color3.fromRGB(236,114,247),Inbox=Color3.fromRGB(255,207,65),Bats=Color3.fromRGB(164,129,250),Guide=Color3.fromRGB(107,168,249),Settings=Color3.fromRGB(173,191,199)}
+local function radius(o,n) local c=Instance.new("UICorner") c.CornerRadius=UDim.new(0,n) c.Parent=o end
+local function outline(o,n,color) local s=Instance.new("UIStroke") s.Thickness=n or 2 s.Color=color or dark s.Transparency=0 s.ApplyStrokeMode=Enum.ApplyStrokeMode.Border s.Parent=o end
+local function shape(parent,x,y,w,h,c,round,rot)
+ local f=Instance.new("Frame") f.Size=UDim2.fromScale(w,h) f.Position=UDim2.fromScale(x,y) f.BackgroundColor3=c f.BorderSizePixel=0 f.Rotation=rot or 0 f.Parent=parent if round then radius(f,round) end return f
+end
+local function text(parent,txt,size,pos,ts,color)
+ local t=Instance.new("TextLabel") t.Size=size t.Position=pos t.BackgroundTransparency=1 t.Text=txt t.TextColor3=color or Color3.new(1,1,1) t.Font=Enum.Font.GothamBlack t.TextSize=ts or 15 t.TextStrokeColor3=dark t.TextStrokeTransparency=0 t.Parent=parent return t
+end
+local function gradient(o,col)
+ local g=Instance.new("UIGradient") g.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,col:Lerp(Color3.new(1,1,1),.42)),ColorSequenceKeypoint.new(.5,col),ColorSequenceKeypoint.new(1,col:Lerp(Color3.new(0,0,0),.2))}) g.Rotation=90 g.Parent=o
+end
+-- Set after uploading assets/menu-icons.png to the owning Roblox account.
+H.Atlas = ""
+local cells={Pets=0,Shop=1,Index=2,Food=3,Bats=4,Guide=5,Settings=6,Boosts=7,Coins=8}
+function H.Icon(parent,name)
+ local icon=Instance.new("ImageLabel") icon.Name=name.."Image" icon.BackgroundTransparency=1
+ icon.Size=UDim2.fromScale(.92,.92) icon.Position=UDim2.fromScale(.04,.04)
+ icon.Image=H.Atlas icon.ScaleType=Enum.ScaleType.Fit
+ local cell=cells[name] or 5 local step=1280/3
+ icon.ImageRectOffset=Vector2.new(math.floor(cell%3*step),math.floor(math.floor(cell/3)*step))
+ icon.ImageRectSize=Vector2.new(math.floor(step),math.floor(step)) icon.Parent=parent
+ return icon
+end
+local function tile(parent,name,pos,size,callback,color)
+ local shadow=Instance.new("Frame") shadow.Name=name.."Shadow" shadow.Size=UDim2.fromOffset(size,size) shadow.Position=pos+UDim2.fromOffset(0,4) shadow.BackgroundColor3=dark shadow.BackgroundTransparency=.25 shadow.BorderSizePixel=0 shadow.Parent=parent radius(shadow,10)
+ local b=Instance.new("ImageButton") b.Name=name.."Button" b.Image="" b.Size=UDim2.fromOffset(size,size) b.Position=pos b.BackgroundColor3=color or colors[name] or colors.Guide b.BorderSizePixel=0 b.Parent=parent b.AutoButtonColor=false radius(b,9) outline(b,2.5) gradient(b,b.BackgroundColor3)
+ local inner=shape(b,.075,.075,.85,.85,Color3.new(1,1,1),6) inner.BackgroundTransparency=.8 outline(inner,1,Color3.fromRGB(255,255,255))
+ H.Icon(b,name)
+ local tooltip=text(b,name,UDim2.new(1.8,0,0,18),UDim2.new(-.4,0,0,-24),13) tooltip.Visible=false tooltip.ZIndex=6
+ b.MouseEnter:Connect(function() tooltip.Visible=true Tween:Create(b,TweenInfo.new(.1),{Rotation=-4}):Play() end)
+ b.MouseLeave:Connect(function() tooltip.Visible=false Tween:Create(b,TweenInfo.new(.1),{Rotation=0}):Play() end)
+ b.Activated:Connect(function() callback(name) end) return b
+end
+function H.New(gui,callbacks)
+ local out={}
+ local bar=Instance.new("Frame") bar.Name="SimulatorToolbar" bar.Size=UDim2.fromOffset(426,73) bar.AnchorPoint=Vector2.new(.5,1) bar.Position=UDim2.new(.5,0,1,-7) bar.BackgroundTransparency=1 bar.Parent=gui
+ local barScale=Instance.new("UIScale") barScale.Parent=bar
+ for i,name in ipairs({"Pets","Shop","Index","Food","Bats","Guide"}) do local b=tile(bar,name,UDim2.fromOffset(12+(i-1)*69,5),54,function(n) callbacks.Open(n) end) text(b,name,UDim2.new(1.4,0,0,15),UDim2.new(-.2,0,1,5),10) end
+ local top=Instance.new("Frame") top.Name="CurrencyPills" top.Size=UDim2.fromOffset(154,74) top.AnchorPoint=Vector2.new(.5,0) top.Position=UDim2.new(.5,0,0,5) top.BackgroundTransparency=1 top.Parent=gui
+ local topScale=Instance.new("UIScale") topScale.Parent=top
+ local function pill(name,index,color)
+  local f=shape(top,0,0,1,1,color,11) f.Size=UDim2.fromOffset(154,31) f.Position=UDim2.fromOffset((index-1)*169,0) outline(f,2) gradient(f,color)
+  local holder=shape(f,0,0,.23,1,color) holder.BackgroundTransparency=1 H.Icon(holder,name)
+  local value=text(f,"0",UDim2.new(.7,0,1,0),UDim2.new(.27,0,0,0),18) value.TextXAlignment=Enum.TextXAlignment.Right
+  local title=text(f,name=="Rate" and "Coins / sec" or name,UDim2.new(1,0,0,14),UDim2.new(0,0,1,1),10)
+  return value
+ end
+ out.Coins=pill("Coins",1,Color3.fromRGB(255,199,45))
+ out.Rate=text(gui,"0 Coins / sec",UDim2.fromOffset(170,24),UDim2.new(0,12,1,-115),15)
+ out.Rate.Name="FarmingRate" out.Rate.TextXAlignment=Enum.TextXAlignment.Left
+ local switch=Instance.new("TextButton") switch.Name="ForestSwitch" switch.Size=UDim2.fromOffset(100,23) switch.Position=UDim2.fromOffset(27,49) switch.Text="FOREST" switch.TextSize=12 switch.Font=Enum.Font.GothamBold switch.TextColor3=Color3.new(1,1,1) switch.BackgroundColor3=Color3.fromRGB(67,197,194) switch.Parent=top radius(switch,6) outline(switch,1.5) gradient(switch,switch.BackgroundColor3) switch.Activated:Connect(function() callbacks.Open("Index") end)
+ local side=Instance.new("Frame") side.Name="UtilityButtons" side.Size=UDim2.fromOffset(52,236) side.AnchorPoint=Vector2.new(1,.5) side.Position=UDim2.new(1,-12,.5,0) side.BackgroundTransparency=1 side.Parent=gui
+ for i,name in ipairs({"Shop","Pets","Index","Settings"}) do tile(side,name,UDim2.fromOffset(3,(i-1)*59),44,function(n) callbacks.Open(n) end,i==1 and Color3.fromRGB(255,109,122) or colors[name]) end
+ local status=text(gui,"MY LITTLE PETS • FOREST",UDim2.new(.8,0,0,19),UDim2.new(.1,0,0,82),11) out.Status=status
+ out.Help=text(gui,"Stand near treasure to farm",UDim2.new(.8,0,0,21),UDim2.new(.1,0,1,-105),12)
+ local rush=Instance.new("TextButton") rush.Size=UDim2.fromOffset(122,31) rush.Position=UDim2.new(0,12,.5,-15) rush.Text="JOIN EGG RUSH" rush.TextColor3=Color3.new(1,1,1) rush.Font=Enum.Font.GothamBlack rush.TextSize=12 rush.BackgroundColor3=Color3.fromRGB(100,215,71) rush.Parent=gui radius(rush,8) outline(rush,2) gradient(rush,rush.BackgroundColor3) rush.Visible=false rush.Activated:Connect(callbacks.Rush) out.Rush=rush
+ local boost=tile(gui,"Boosts",UDim2.new(0,12,1,-85),54,function() callbacks.Open("Shop") end,Color3.fromRGB(79,220,58))
+ text(boost,"Boosts",UDim2.new(1.5,0,0,17),UDim2.new(-.25,0,1,3),11)
+ local function resize()
+  local cam=workspace.CurrentCamera if not cam then return end local w=cam.ViewportSize.X
+  barScale.Scale=math.min(1,(w-26)/426) topScale.Scale=1
+  local small=w&lt;650
+  bar.Position=UDim2.new(.5,0,1,-7)
+  boost.Position=UDim2.new(0,12,1,small and -170 or -85)
+  out.Rate.Position=boost.Position+UDim2.fromOffset(0,-30)
+  side.Position=UDim2.new(1,-8,.5,0)
+ end
+ resize() local cam=workspace.CurrentCamera if cam then local w=cam.ViewportSize.X barScale.Scale=math.min(1,(w-26)/510) topScale.Scale=math.min(1,(w-30)/500) boost.Visible=w&gt;700 side.Position=UDim2.new(1,-8,.5,0) end end
+ resize() if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end return out
+end
+return H
+
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="RemoteEvent">
+        <Properties>
+          <string name="Name">Action</string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ServerScriptService">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Folder">
+      <Properties>
+        <string name="Name">MyLittlePets</string>
+      </Properties>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">Profiles</string>
+          <ProtectedString name="Source">-- All critical grants pass through an owned profile transaction. No production fallback to empty data.
+local D={}
+local DS=game:GetService("DataStoreService") local Http=game:GetService("HttpService") local Run=game:GetService("RunService")
+local C=require(game.ReplicatedStorage.MyLittlePets.Config) local B=require(game.ReplicatedStorage.MyLittlePets.BigNum)
+local store=DS:GetDataStore(C.DataStoreName) local memory={} local sessions={}
+local token=(game.JobId~="" and game.JobId or "studio")..":"..Http:GenerateGUID(false)
+local function copy(v) if type(v)~="table" then return v end local t={} for k,x in pairs(v) do t[k]=copy(x) end return t end D.Copy=copy
+local function retry(fn)
+ local last for i=1,3 do local ok,result=pcall(fn) if ok then return true,result end last=result if i&lt;3 then task.wait(2^(i-1)) end end return false,last
+end
+function D.Validate(d)
+ assert(type(d)=="table" and d.Version==C.Version,"Unsupported profile schema; migration required")
+ d.Coins=B.N(d.Coins) assert(type(d.Pets)=="table" and #d.Pets&lt;=C.MaxPets,"Invalid inventory")
+ assert(type(d.Sector)=="number" and d.Sector%1==0 and d.Sector&gt;=1 and d.Sector&lt;=5,"Invalid sectors")
+ local ids={} local count=0
+ for _,pet in ipairs(d.Pets) do
+  assert(type(pet.Uid)=="string" and not ids[pet.Uid] and C.Species[pet.Species],"Invalid pet") ids[pet.Uid]=true
+  assert(type(pet.Level)=="number" and pet.Level%1==0 and pet.Level&gt;=1 and pet.Level&lt;=100,"Invalid level")
+  assert(type(pet.XP)=="number" and pet.XP&gt;=0 and pet.XP==pet.XP,"Invalid XP")
+  assert(C.Variants[pet.Variant] and C.Origin[pet.Origin],"Invalid pet variant/origin")
+  assert(pet.Size=="Normal" or pet.Size=="Huge","Invalid size")
+  local seen={} for _,id in ipairs(pet.Mutations) do local found=false for _,w in ipairs(C.Weather) do if w.Mutation==id then found=true end end assert(found and not seen[id],"Invalid mutation") seen[id]=true end
+  if pet.Equipped then count+=1 end
+ end assert(count&lt;=C.EquipSlots,"Too many equipped pets")
+ for _,key in ipairs({"Discovered","Bats","Food","Boosters","Inbox","Receipts","Transactions","TransactionOrder"}) do assert(type(d[key])=="table","Missing "..key) end
+ assert(d.Tier&gt;=0 and d.Tier%1==0 and d.Tier&lt;=30,"Invalid tier")
+ return d
+end
+function D.Open(p,factory)
+ local mode=Run:IsStudio() and not C.StudioUseDataStore and "Studio session" or "Cloud saved"
+ local s={Player=p,Mode=mode,Busy=false,Closed=false,LastSave=os.clock(),Lease=os.time()+180,Revision=0}
+ local initial=factory()
+ if mode=="Studio session" then
+  s.Data=copy(memory[p.UserId] or initial) D.Validate(s.Data) sessions[p]=s return s
+ end
+ local ok,result=retry(function()
+  return store:UpdateAsync("p_"..p.UserId,function(old)
+   if old then
+    D.Validate(old)
+    if old.Session and old.Session.Token~=token and old.Session.Expires&gt;os.time() then return nil end
+   end
+   local d=copy(old or initial) d.Session={Token=token,Expires=os.time()+180} return d,{p.UserId}
+  end)
+ end)
+ if not ok or not result or not result.Session or result.Session.Token~=token then return nil,"Your saved profile is unavailable or active on another server. Please rejoin; no progress was overwritten." end
+ s.Data=D.Validate(result) sessions[p]=s return s
+end
+local function persist(s,d,release)
+ if s.Mode=="Studio session" then memory[s.Player.UserId]=copy(d) return true end
+ local proposed=copy(d) proposed.LastWrite=Http:GenerateGUID(false) if release then proposed.Session=nil else proposed.Session={Token=token,Expires=os.time()+180} end
+ local ok,result=retry(function()
+  return store:UpdateAsync("p_"..s.Player.UserId,function(old)
+   if not old or not old.Session or old.Session.Token~=token then return nil end
+   return proposed,{s.Player.UserId}
+  end)
+ end)
+ if not ok or not result then s.Uncertain=true s.Error="Saving unavailable. Critical changes are paused; retry shortly." return false end
+ s.Error=nil s.Lease=os.time()+180 s.LastSave=os.clock() return true
+end
+function D.Active(s) return s and not s.Closed and not s.Uncertain and (s.Mode=="Studio session" or os.time()&lt;s.Lease-10) end
+function D.Commit(s,fn,tx)
+ if not D.Active(s) or s.Busy then return false,"Profile busy or unavailable. Please retry." end
+ if tx and s.Data.Transactions[tx] then return true,copy(s.Data.Transactions[tx]),true end
+ s.Busy=true local draft=copy(s.Data)
+ local ok,allowed,result=pcall(fn,draft)
+ if not ok or not allowed then s.Busy=false return false,ok and result or "The change could not be validated." end
+ if tx then
+  draft.Transactions[tx]=result or true table.insert(draft.TransactionOrder,tx)
+  while #draft.TransactionOrder&gt;160 do local id=table.remove(draft.TransactionOrder,1) draft.Transactions[id]=nil end
+ end
+ local valid,err=pcall(D.Validate,draft)
+ if not valid then s.Busy=false warn("Profile validation rejected transaction: "..tostring(err)) return false,"Invalid profile change rejected." end
+ if not persist(s,draft,false) then s.Busy=false return false,s.Error end
+ s.Data=draft s.Revision+=1 s.Busy=false return true,result,false
+end
+-- A timed-out write may already have committed. Reload authoritative data before another write.
+function D.Resolve(s)
+ if not s or not s.Uncertain or s.Closed then return not (s and s.Uncertain) end
+ if s.Busy then return false end s.Busy=true
+ local ok,result=retry(function()
+  return store:UpdateAsync("p_"..s.Player.UserId,function(old)
+   if not old or not old.Session or old.Session.Token~=token then return nil end
+   return old,{s.Player.UserId}
+  end)
+ end)
+ if ok and result and result.Session and result.Session.Token==token then
+  local valid=pcall(D.Validate,result)
+  if valid then s.Data=result s.Uncertain=false s.Error=nil s.Lease=result.Session.Expires s.Revision+=1 end
+ end
+ s.Busy=false return not s.Uncertain
+end
+function D.Save(s,release)
+ if not s or s.Closed or s.Busy then return false end
+ if s.Uncertain and not D.Resolve(s) then return false end
+ s.Busy=true local ok=persist(s,s.Data,release)
+ if ok and release then s.Closed=true sessions[s.Player]=nil end s.Busy=false return ok
+end
+function D.Close(s)
+ if not s or s.Closed then return end
+ local deadline=os.clock()+20 while s.Busy and os.clock()&lt;deadline do task.wait(.1) end
+ D.Save(s,true)
+end
+function D.Get(p) return sessions[p] end
+function D.All() return sessions end
+return D
+
+
+
+
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">GameService</string>
+          <ProtectedString name="Source">local G={Runtime={}}
+local RS=game:GetService("ReplicatedStorage") local Http=game:GetService("HttpService")
+local C=require(RS.MyLittlePets.Config) local B=require(RS.MyLittlePets.BigNum) local A=require(RS.MyLittlePets.Assets) local D=require(script.Parent.Profiles)
+G.C=C G.B=B G.D=D
+local rng=Random.new()
+function G.NewPet(id,opts)
+ opts=opts or {} return {Uid=Http:GenerateGUID(false),Species=id,Level=1,XP=0,Variant=opts.Variant or "Normal",Origin=C.Species[id].Biome,Size=opts.Size or "Normal",Equipped=false,Mutations={},AcquiredAt=os.time()}
+end
+function G.NewProfile()
+ local p=G.NewPet(1) p.Equipped=true
+ return {Version=C.Version,Coins="0",Pets={p},Discovered={[C.Species[1].Id]=true},Bats={},Skin=0,Sector=1,Tier=0,Food={Apple=0,Fish=0,GoldenFruit=0,MysticTreat=0},Boosters={Basic=0,Super=0,Ultra=0},ActiveBooster={Id="",Expires=0},Inbox={},Receipts={},Transactions={},TransactionOrder={},LastSafe={0,4,-88},Daily={},Weekly={}}
+end
+function G.Rewards(d)
+ for r=1,9 do local all=true for _,s in ipairs(C.Species) do if s.Rarity==r and not d.Discovered[s.Id] then all=false break end end if all then d.Bats[tostring(r)]=true end end
+end
+function G.GrantPet(d,pet)
+ if #d.Pets&gt;=C.MaxPets then return false,"Pet inventory full (200)." end
+ table.insert(d.Pets,pet) d.Discovered[C.Species[pet.Species].Id]=true G.Rewards(d) return true
+end
+function G.XP(pet,amount)
+ if pet.Level&gt;=100 then return end pet.XP+=amount
+ while pet.Level&lt;100 and pet.XP&gt;=100*pet.Level do pet.XP-=100*pet.Level pet.Level+=1 end
+ if pet.Level==100 then pet.XP=0 end
+end
+function G.Team(d)
+ local total="0" for _,p in ipairs(d.Pets) do if p.Equipped then total=B.Add(total,C.Power(p,d.Tier,B)) end end return total
+end
+function G.Speed(d)
+ local best=1 for _,p in ipairs(d.Pets) do if p.Equipped then best=math.max(best,C.Species[p.Species].Rarity) end end return 16*(1+(best==10 and .3 or (best-1)*.03))
+end
+function G.Roll(weights)
+ weights=weights or C.Weights local n=rng:NextNumber(0,100) local sum=0 local rarity=1
+ for i,v in ipairs(weights) do sum+=v if n&lt;sum then rarity=i break end end
+ assert(rarity&lt;9,"Gated rarities cannot enter normal rolls")
+ local pool={} for i,s in ipairs(C.Species) do if s.Rarity==rarity then table.insert(pool,i) end end return pool[rng:NextInteger(1,#pool)]
+end
+function G.Root(p) return p.Character and p.Character:FindFirstChild("HumanoidRootPart") end
+function G.Humanoid(p) return p.Character and p.Character:FindFirstChildOfClass("Humanoid") end
+function G.Ready(p)
+ local s=D.Get(p) local h=G.Humanoid(p) return D.Active(s) and not s.Busy and h and h.Health&gt;0
+end
+function G.Tell(p,msg) G.Remote:FireClient(p,"Toast",msg) end
+function G.SetWorld(world,remote) G.World=world G.Remote=remote end
+function G.RuntimeFor(p)
+ if not G.Runtime[p] then G.Runtime[p]={Models={},Cooldown={},Assigned=nil,LastBroadcast=0} end return G.Runtime[p]
+end
+function G.Rebuild(p)
+ local s=D.Get(p) if not s then return end local rt=G.RuntimeFor(p)
+ if rt.Visual then rt.Visual:Destroy() end
+ local folder=Instance.new("Folder") folder.Name="Pets_"..p.UserId folder.Parent=G.World.Root rt.Visual=folder rt.Models={}
+ local index=0
+ for _,pet in ipairs(s.Data.Pets) do if pet.Equipped then index+=1
+  local model=A.Pet(C.Species[pet.Species],pet,C) model:SetAttribute("Owner",p.UserId) model:SetAttribute("Uid",pet.Uid) model:SetAttribute("Slot",index)
+  local root=G.Root(p) model:PivotTo(root and root.CFrame*CFrame.new((index-2)*3,0,5) or CFrame.new(0,2,-88)) model.Parent=folder
+  A.Label(model.PrimaryPart,C.Species[pet.Species].Name,120,24,2.8,28) rt.Models[pet.Uid]=model
+ end end
+end
+function G.Find(d,uid) for _,pet in ipairs(d.Pets) do if pet.Uid==uid then return pet end end end
+function G.Snapshot(p,arena,weather,shop)
+ local s=D.Get(p) if not s then return end local d=s.Data local rt=G.RuntimeFor(p)
+ G.Remote:FireClient(p,"State",{Coins=d.Coins,Pets=d.Pets,Discovered=d.Discovered,Bats=d.Bats,Skin=d.Skin,Sector=d.Sector,CurrentSector=rt.CurrentSector or 1,Tier=d.Tier,Rate=G.Team(d),Food=d.Food,Boosters=d.Boosters,ActiveBooster=d.ActiveBooster,Inbox=d.Inbox,Revision=s.Revision,Mode=s.Mode,SaveError=s.Error,Loading=s.Busy,Rush=arena and arena.State or "Idle",RushTime=arena and math.max(0,math.ceil(arena.Ends-os.clock())) or 0,InRush=rt.InRush or false,BoxesLeft=arena and arena.BoxesLeft or 10,ClaimProgress=rt.ClaimProgress or 0,Weather=weather and weather.Name or "Sunny",WeatherTime=weather and math.max(0,math.ceil(weather.Ends-os.clock())) or 0,Shop=shop or {},ExactCoins=d.Coins,DailyEnabled=C.Divine.Enabled,WeeklyEnabled=C.Weekly.Enabled})
+end
+function G.RequestId(arg)
+ return type(arg)=="table" and type(arg.Id)=="string" and #arg.Id&lt;=64 and #arg.Id&gt;=8 and type(arg.Time)=="number" and math.abs(os.time()-arg.Time)&lt;=120
+end
+function G.Hatch(p,arg)
+ local s=D.Get(p) local r=G.Root(p) local rt=G.RuntimeFor(p)
+ if not s or not r or rt.InRush then return false,"Leave Egg Rush before hatching." end
+ if not G.RequestId(arg) then return false,"Invalid hatch request. Please try again." end
+ local tx="hatch:"..arg.Id if s.Data.Transactions[tx] then return true,s.Data.Transactions[tx],true end
+ if not G.Ready(p) then return false,"Profile busy. Please retry." end
+ if (r.Position-G.World.Egg.Position).Magnitude&gt;19 then return false,"Visit the giant clover egg at the plaza." end
+ if os.clock()-(rt.Cooldown.Hatch or 0)&lt;1.5 then return false,"Let the previous egg finish hatching." end rt.Cooldown.Hatch=os.clock()
+ local id=G.Roll() local pet=G.NewPet(id)
+ return D.Commit(s,function(d)
+  if #d.Pets&gt;=C.MaxPets then return false,"Your inventory is full." end
+  if B.Cmp(d.Coins,C.EggCost)&lt;0 then return false,"You need 250K Coins. Stand near treasure to farm." end
+  local equipped=0 for _,v in ipairs(d.Pets) do if v.Equipped then equipped+=1 end end pet.Equipped=equipped&lt;C.EquipSlots
+  d.Coins=B.Sub(d.Coins,C.EggCost) G.GrantPet(d,pet) return true,{Species=id,Uid=pet.Uid}
+ end,tx)
+end
+function G.Equip(p,uid)
+ local s=D.Get(p) if not s then return false,"Profile unavailable." end
+ return D.Commit(s,function(d)
+  local pet=G.Find(d,uid) if not pet then return false,"Pet not owned." end
+  local n=0 for _,v in ipairs(d.Pets) do if v.Equipped then n+=1 end end
+  if not pet.Equipped and n&gt;=C.EquipSlots then return false,"Three pets maximum. Unequip one first." end
+  pet.Equipped=not pet.Equipped return true,true
+ end)
+end
+function G.EquipBest(p)
+ return D.Commit(D.Get(p),function(d)
+  local order={} for _,pet in ipairs(d.Pets) do table.insert(order,pet) pet.Equipped=false end
+  table.sort(order,function(a,b) return B.Cmp(C.Power(a,d.Tier,B),C.Power(b,d.Tier,B))&gt;0 end)
+  for i=1,math.min(3,#order) do order[i].Equipped=true end return true,true
+ end)
+end
+function G.BuyFood(p,id)
+ local food for _,f in ipairs(C.Foods) do if f.Id==id then food=f end end if not food then return false,"Unknown food." end
+ return D.Commit(D.Get(p),function(d) if B.Cmp(d.Coins,food.Cost)&lt;0 then return false,"Not enough Coins." end d.Coins=B.Sub(d.Coins,food.Cost) d.Food[id]+=1 return true,"Bought "..food.Name end)
+end
+function G.Feed(p,uid,id)
+ local food for _,f in ipairs(C.Foods) do if f.Id==id then food=f end end if not food then return false,"Unknown food." end
+ return D.Commit(D.Get(p),function(d)
+  local pet=G.Find(d,uid) if not pet then return false,"Pet not owned." end
+  if pet.Level==100 then return false,"This pet is already level 100." end
+  if (d.Food[id] or 0)&lt;=0 then return false,"Buy "..food.Name.." in the Food shop first." end
+  d.Food[id]-=1 G.XP(pet,food.XP) return true,"Fed "..food.Name.." • +"..food.XP.." XP"
+ end)
+end
+function G.Unlock(p,sector)
+ local s=D.Get(p) local r=G.Root(p) local gate=G.World.Gates[sector]
+ if not gate or not r or (r.Position-gate.Part.Position).Magnitude&gt;18 then return false,"Visit this sector's gate." end
+ return D.Commit(s,function(d)
+  if d.Sector&gt;=sector then return false,"This sector is already unlocked." end
+  if d.Sector~=sector-1 then return false,"Unlock the previous sector first." end
+  if B.Cmp(d.Coins,C.Gates[sector])&lt;0 then return false,"You need "..B.Format(C.Gates[sector]).." Coins." end
+  d.Coins=B.Sub(d.Coins,C.Gates[sector]) d.Sector=sector return true,C.Sectors[sector].." unlocked!"
+ end)
+end
+function G.InboxGrant(p,key,pet)
+ return D.Commit(D.Get(p),function(d)
+  if d.Receipts[key] then return true,true end
+  d.Receipts[key]=true d.Inbox[key]={Pet=pet,At=os.time(),Source="Egg Rush"} return true,true
+ end)
+end
+function G.OpenReward(p,key)
+ return D.Commit(D.Get(p),function(d)
+  local reward=d.Inbox[key] if not reward then return false,"Reward already opened or unavailable." end
+  if #d.Pets&gt;=C.MaxPets then return false,"Inventory full. Your reward will stay in the inbox." end
+  G.GrantPet(d,reward.Pet) d.Inbox[key]=nil return true,{Species=reward.Pet.Species,Uid=reward.Pet.Uid}
+ end)
+end
+function G.Boost(p,id)
+ local booster for _,v in ipairs(C.Boosters) do if v.Id==id then booster=v end end if not booster then return false,"Unknown booster." end
+ return D.Commit(D.Get(p),function(d)
+  if d.ActiveBooster.Expires&gt;os.time() then return false,"A booster is already active. Its timer continues offline." end
+  if (d.Boosters[id] or 0)&lt;1 then return false,"No booster owned. Purchases are Coming Soon." end
+  d.Boosters[id]-=1 d.ActiveBooster={Id=id,Expires=os.time()+300} return true,"Lucky booster active for 5 minutes. Direct weather hits are required."
+ end)
+end
+function G.Mutate(p,uid,weather,strike,roll)
+ local rt=G.RuntimeFor(p) if rt.InRush or not G.Ready(p) then return false,"Not eligible." end
+ return D.Commit(D.Get(p),function(d)
+  local pet=G.Find(d,uid) if not pet or not pet.Equipped or table.find(pet.Mutations,weather.Mutation) then return false,"Pet not eligible." end
+  local chance=.05 if d.ActiveBooster.Expires&gt;os.time() then for _,b in ipairs(C.Boosters) do if b.Id==d.ActiveBooster.Id then chance+=b.Bonus end end end
+  if roll&lt;math.min(chance,1) then table.insert(pet.Mutations,weather.Mutation) return true,{Success=true,Name=C.Species[pet.Species].Name,Mutation=weather.Mutation} end
+  return true,{Success=false}
+ end,"strike:"..strike)
+end
+-- Fixed-value target work is shared proportionally; the deterministic remainder never overpays.
+function G.Allocate(left,requests)
+ local total="0" for _,q in ipairs(requests) do total=B.Add(total,q.Amount) end
+ if total=="0" then return {},left end
+ local available=B.Min(left,total) local used="0" local result={}
+ for i,q in ipairs(requests) do local share=B.Div(B.Mul(available,q.Amount),total) result[i]=share used=B.Add(used,share) end
+ local remainder=B.Sub(available,used)
+ for i,q in ipairs(requests) do if remainder=="0" then break end if B.Cmp(result[i],q.Amount)&lt;0 then result[i]=B.Add(result[i],"1") remainder=B.Sub(remainder,"1") end end
+ return result,B.Sub(left,available)
+end
+return G
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">World</string>
+          <ProtectedString name="Source">local W={}
+function W.Build(C)
+ local A=require(game.ReplicatedStorage.MyLittlePets.Assets) local B=require(game.ReplicatedStorage.MyLittlePets.BigNum)
+ local old=workspace:FindFirstChild("MyLittlePets") if old then old:Destroy() end
+ local base=workspace:FindFirstChild("Baseplate") if base then base.Position=Vector3.new(base.Position.X,-base.Size.Y/2-9,base.Position.Z) end
+ local root=Instance.new("Folder") root.Name="MyLittlePets" root.Parent=workspace
+ W.Root=root W.Targets={} W.Gates={} W.Boxes={} W.Eggs={} W.Part=A.Part W.Sign=A.Label
+ local gold=Color3.fromRGB(255,199,47) local wood=Color3.fromRGB(119,76,43) local stone=Color3.fromRGB(142,157,143) local dark=Color3.fromRGB(20,72,63)
+ local function block(parent,name,size,pos,color,collide)
+  local p=A.Part(parent or root,name,size,pos,color) p.CanCollide=collide or false return p
+ end
+ local function cylinder(parent,name,radius,h,pos,color,collide) local p=A.Cylinder(parent or root,name,radius,h,CFrame.new(pos),color) p.CanCollide=collide or false return p end
+ local function tree(parent,x,z,k)
+  local y=0 local h=12+(k%4)*2
+  block(parent,"PineTrunk",Vector3.new(2,h,2),Vector3.new(x,h/2,z),wood,true)
+  for j=1,3 do local width=13-j*2 local cf=CFrame.new(x,h*.45+j*3,z)*CFrame.Angles(0,k*.7,0)
+   A.Wedge(parent,"PineCrown",Vector3.new(width,6,width/2),cf*CFrame.new(0,0,width/4),Color3.fromRGB(37+j*8,131+j*12,54+j*5))
+   A.Wedge(parent,"PineCrown",Vector3.new(width,6,width/2),cf*CFrame.Angles(0,math.pi,0)*CFrame.new(0,0,width/4),Color3.fromRGB(37+j*8,131+j*12,54+j*5))
+  end
+ end
+ local function lantern(parent,pos)
+  block(parent,"LampPost",Vector3.new(.6,4,.6),pos+Vector3.new(0,2,0),wood)
+  local glow=block(parent,"LanternGlow",Vector3.new(1,1.25,1),pos+Vector3.new(0,4.3,0),Color3.fromRGB(255,206,112)) glow.Material=Enum.Material.Neon
+  block(parent,"LanternCap",Vector3.new(1.4,.25,1.4),pos+Vector3.new(0,5.05,0),wood)
+ end
+ local function fence(parent,x,z,length,axis)
+  for i=0,math.floor(length/10) do local pos=Vector3.new(x,0,z)+(axis=="x" and Vector3.new(i*10,0,0) or Vector3.new(0,0,i*10))
+   block(parent,"FencePost",Vector3.new(1,4.5,1),pos+Vector3.new(0,2.25,0),wood,true)
+   if i&lt;math.floor(length/10) then for _,h in ipairs({1.5,3}) do block(parent,"FenceRail",axis=="x" and Vector3.new(10,.5,.5) or Vector3.new(.5,.5,10),pos+(axis=="x" and Vector3.new(5,h,0) or Vector3.new(0,h,5)),wood) end end
+  end
+ end
+ local function board(name,pos,size,text)
+  local cf=CFrame.lookAt(pos,Vector3.new(0,pos.Y,-82)) local p=block(root,name,size+Vector3.new(1.2,1.2,.4),cf,wood)
+  local face=block(root,name.."Face",size,cf*CFrame.new(0,0,-.3),dark) local label=A.Face(face,text)
+  for side=-1,1,2 do block(root,"BoardPost",Vector3.new(1,7,1),cf*CFrame.new(side*(size.X/2-1),-size.Y/2-2,0),wood) end
+  return face,label
+ end
+ local terrainColors={Color3.fromRGB(112,197,65),Color3.fromRGB(90,184,73),Color3.fromRGB(68,160,81),Color3.fromRGB(63,147,89),Color3.fromRGB(51,132,96)}
+ for s=1,5 do
+  local zone=Instance.new("Folder") zone.Name="Sector"..s zone.Parent=root local z=(s-1)*120
+  block(zone,"Meadow",Vector3.new(160,4,120),Vector3.new(0,-2,z),terrainColors[s],true)
+  block(zone,"ForestTrail",Vector3.new(15,.12,120),Vector3.new(0,.08,z),Color3.fromRGB(202,181,129))
+  for side=-1,1,2 do
+   for i=1,8 do local tz=z-67+i*15 local x=side*(77+(i%3)) local height=18+(i%3)*4
+    block(zone,"Cliff",Vector3.new(16,height,17),Vector3.new(x,height/2-2,tz),Color3.fromRGB(123+(i%3)*8,96+(i%2)*8,73),true)
+    block(zone,"CliffGrass",Vector3.new(17,1.5,18),Vector3.new(x,height-1.25,tz),terrainColors[s])
+    if i%2==0 then tree(zone,side*65,tz,i+s) end
+    if i%3==0 then local rock=block(zone,"MossRock",Vector3.new(4,3,5),Vector3.new(side*57,1.5,tz),stone,true) rock.Orientation=Vector3.new(0,i*18,10) end
+   end
+   fence(zone,side*61,z-60,120,"z")
+   for i=1,3 do lantern(zone,Vector3.new(side*59,0,z-48+i*28)) end
+  end
+  for i=1,12 do
+   local kind=(i-1)%4+1 local def=C.Targets[kind] local x=(i%2==0 and -1 or 1)*(20+(i%3)*12) local tz=z-42+math.floor((i-1)/2)*17
+   local model=Instance.new("Model") model.Name=def.Name.."_"..i model.Parent=zone
+   local cf=CFrame.new(x,0,tz) local core
+   if kind==4 then
+    core=block(model,"ChestBody",Vector3.new(6,3.2,4.4),cf*CFrame.new(0,1.8,0),s&gt;=4 and gold or Color3.fromRGB(153,89,38),true)
+    block(model,"ChestLid",Vector3.new(6.2,1.4,4.6),cf*CFrame.new(0,4.1,0),Color3.fromRGB(159,97,43))
+    for side=-1,1,2 do block(model,"GoldBand",Vector3.new(.55,4.1,4.7),cf*CFrame.new(side*1.9,2.45,0),gold) end
+    block(model,"Lock",Vector3.new(.9,1.1,.35),cf*CFrame.new(0,2.7,-2.4),gold)
+   else
+    core=block(model,"CoinCore",Vector3.new(1,1,1),cf*CFrame.new(0,.5,0),gold) core.Transparency=1
+    for j=1,def.Count do local a=j*2.399 local rad=math.sqrt(j)*.48 local layers=j%3
+     local coin=cylinder(model,"LeafCoin",.85,.24,Vector3.new(x+math.cos(a)*rad,.3+layers*.25,tz+math.sin(a)*rad),gold)
+     local leaf=block(model,"LeafEngraving",Vector3.new(.23,.04,.5),coin.Position+Vector3.new(0,.14,0),Color3.fromRGB(218,151,29)) leaf.Orientation=Vector3.new(0,j*26,0)
+    end
+   end
+   model.PrimaryPart=core local max=def.Work for _=2,s do max=B.MulSmall(max,10) end
+   local lab=A.Label(core,def.Name.."\n"..B.Format(max),145,34,kind==4 and 4.5 or 3,40)
+   table.insert(W.Targets,{Id=s.."_"..i,Model=model,Part=core,Sector=s,Max=max,Left=max,Respawn=0,Delay=def.Respawn,Label=lab,Hidden=false})
+  end
+  local title=block(zone,"SectorBoard",Vector3.new(24,4,1),Vector3.new(-24,6,z-53),dark) A.Face(title,C.Sectors[s])
+  if s&gt;1 then
+   local pos=Vector3.new(0,0,z-60)
+   for side=-1,1,2 do block(zone,"GateColumn",Vector3.new(4,13,4),pos+Vector3.new(side*15,6.5,0),stone,true) lantern(zone,pos+Vector3.new(side*15,12,0)) end
+   local head=block(zone,"GateTitle",Vector3.new(30,4,2),pos+Vector3.new(0,13,0),dark) A.Face(head,C.Sectors[s].." • "..B.Format(C.Gates[s]))
+   local gate=block(zone,"Gate"..s,Vector3.new(27,9,1),pos+Vector3.new(0,4.5,0),Color3.fromRGB(74,203,173)) gate.Transparency=.45
+   W.Gates[s]={Part=gate,Prompt=A.Prompt(gate,"Unlock sector",B.Format(C.Gates[s]).." Coins")}
+  end
+  task.wait()
+ end
+ local plaza=Instance.new("Folder") plaza.Name="GiantEggPlaza" plaza.Parent=root
+ block(plaza,"PlazaGround",Vector3.new(190,4,150),Vector3.new(0,-2,-135),Color3.fromRGB(193,192,148),true)
+ block(plaza,"ArrivalPath",Vector3.new(23,.13,145),Vector3.new(0,.09,-132),Color3.fromRGB(228,208,164))
+ for side=-1,1,2 do for i=1,6 do tree(plaza,side*87,-63-i*22,i) end end
+ for i=1,5 do cylinder(plaza,"PlazaStep",16+i*2,.45,Vector3.new(0,.225*i,-145),i%2==0 and stone or Color3.fromRGB(179,192,169),true) end
+ local function egg(pos,r,large)
+  local radius=large and 7 or 4 local h=large and 11 or 6.5 local col=large and Color3.fromRGB(247,255,227) or C.Colors[r]
+  cylinder(plaza,"EggPedestal",radius+1,1,Vector3.new(pos.X,2,pos.Z),stone,true)
+  cylinder(plaza,"RarityTrim",radius+.3,.4,Vector3.new(pos.X,2.7,pos.Z),large and Color3.fromRGB(78,198,89) or col)
+  local e=A.Part(plaza,large and "ForestEgg" or "ShowcaseEgg"..r,Vector3.new(radius*1.3,h,radius*1.3),Vector3.new(pos.X,3.2+h/2,pos.Z),col,Enum.PartType.Ball) e.CanCollide=true
+  if large then
+   for _,offset in ipairs({Vector3.new(-.6,.6,-4.1),Vector3.new(.6,.6,-4.1),Vector3.new(-.6,-.5,-4.1),Vector3.new(.6,-.5,-4.1)}) do A.Part(plaza,"CloverLeaf",Vector3.new(1.8,1.8,.5),e.CFrame+offset,Color3.fromRGB(46,183,72),Enum.PartType.Ball) end
+   A.Label(e,"FOREST EGG • 250K\nView pets &amp; odds",210,45,h/2+1,65) W.Egg=e W.EggPrompt=A.Prompt(e,"View egg","Forest • 250K Coins")
+  else
+   A.Label(e,C.Rarities[r].."\nCollection showcase",110,35,h/2+.8,38)
+   table.insert(W.Eggs,{Part=e,Prompt=A.Prompt(e,"View collection",C.Rarities[r]),Rarity=r})
+   for side=-1,1,2 do lantern(plaza,Vector3.new(pos.X+side*(radius+1.4),0,pos.Z)) end
+  end return e
+ end
+ for r=1,9 do local a=(r-5)*math.pi/10 egg(Vector3.new(math.sin(a)*69,0,-143-math.cos(a)*42),r,false) end
+ egg(Vector3.new(0,0,-145),1,true)
+ board("Welcome",Vector3.new(0,19,-196),Vector3.new(49,6,1),"MY LITTLE PETS\nGIANT EGG PLAZA")
+ local shop=Instance.new("Folder") shop.Name="ForestShop" shop.Parent=plaza local sx,sz=65,-153
+ block(shop,"Counter",Vector3.new(21,4,9),Vector3.new(sx,2,sz),wood,true)
+ block(shop,"CounterTop",Vector3.new(23,.6,11),Vector3.new(sx,4.3,sz),Color3.fromRGB(188,133,71))
+ for side=-1,1,2 do block(shop,"KioskPost",Vector3.new(.8,8,.8),Vector3.new(sx+side*10,8,sz+3),wood) end
+ for i=1,10 do local q=block(shop,"AwningStripe",Vector3.new(2.3,.5,13),CFrame.new(sx-12.65+i*2.3,12,sz-1)*CFrame.Angles(.12,0,0),i%2==0 and Color3.fromRGB(84,176,238) or Color3.fromRGB(249,249,231)) end
+ local shopFace=block(shop,"ShopSign",Vector3.new(22,3,1),CFrame.lookAt(Vector3.new(sx,14,sz-1),Vector3.new(0,14,-82)),dark) A.Face(shopFace,"SHOP • PERMANENT UPGRADES")
+ for i,b in ipairs(C.Boosters) do local bottle=A.Part(shop,"BoosterBottle",Vector3.new(1.2,1.7,1.2),Vector3.new(sx-5+i*2.5,5.4,sz-2),C.Colors[i*2],Enum.PartType.Ball) block(shop,"BottleCork",Vector3.new(.5,.45,.5),bottle.Position+Vector3.new(0,1,0),gold) end
+ W.ShopPrompt=A.Prompt(shopFace,"Open shop","Permanent upgrades • Boosters",0,20)
+ W.ServerBoard,W.ServerText=board("ServerLeaderboard",Vector3.new(65,9,-93),Vector3.new(28,16,1),"SERVER LEADERBOARD\nLoading…")
+ W.GlobalBoard,W.GlobalText=board("GlobalLeaderboard",Vector3.new(-65,9,-93),Vector3.new(28,16,1),"GLOBAL LEADERBOARD\nLoading…")
+ W.ServerText.TextScaled=false W.ServerText.TextSize=29 W.ServerText.TextYAlignment=Enum.TextYAlignment.Top
+ W.GlobalText.TextScaled=false W.GlobalText.TextSize=29 W.GlobalText.TextYAlignment=Enum.TextYAlignment.Top
+ local portal=block(root,"RushPortal",Vector3.new(11,13,2),Vector3.new(48,6.5,-59),Color3.fromRGB(150,90,239)) portal.Material=Enum.Material.Neon portal.Transparency=.2
+ A.Label(portal,"EGG RUSH\nJoin or practice",180,45,8,65) W.RushPortal=portal W.RushPrompt=A.Prompt(portal,"Join Egg Rush","Equal stats • Every 20 minutes")
+ local archive=block(plaza,"PetGallery",Vector3.new(4,7,3),Vector3.new(-38,3.5,-131),Color3.fromRGB(103,176,104)) A.Label(archive,"PET INDEX",120,30,5,45) W.IndexPrompt=A.Prompt(archive,"Open Pet Index","Forest collection")
+ local river=block(root,"RiverGateway",Vector3.new(36,17,3),Vector3.new(0,8.5,540),Color3.fromRGB(80,182,217),true) river.Material=Enum.Material.Glass A.Face(river,"RIVER\nCOMING SOON")
+ for side=-1,1,2 do block(root,"RiverPillar",Vector3.new(5,22,5),Vector3.new(side*20,11,540),stone,true) end
+ for i=1,13 do local x=-100+i*15 local h=18+(i%3)*3 block(plaza,"PlazaCliff",Vector3.new(16,h,14),Vector3.new(x,h/2-2,-209),Color3.fromRGB(134,104,77),true) block(plaza,"PlazaCliffGrass",Vector3.new(17,1,15),Vector3.new(x,h-1.5,-209),Color3.fromRGB(100,177,65)) if i%2==0 then tree(plaza,x,-211,i) end end
+ local spawn=Instance.new("SpawnLocation") spawn.Name="ForestSpawn" spawn.Size=Vector3.new(7,.4,7) spawn.CFrame=CFrame.lookAt(Vector3.new(0,.3,-88),Vector3.new(0,.3,-150)) spawn.Anchored=true spawn.Neutral=true spawn.Duration=0 spawn.Transparency=1 spawn.CanCollide=false spawn.Parent=root W.Spawn=spawn
+ local oldSpawn=workspace:FindFirstChild("SpawnLocation") if oldSpawn then oldSpawn.Enabled=false end
+ local arena=Instance.new("Folder") arena.Name="MiniField" arena.Parent=root
+ block(arena,"ArenaGrass",Vector3.new(132,4,150),Vector3.new(250,-2,15),Color3.fromRGB(102,184,89),true)
+ for side=-1,1,2 do fence(arena,250+side*65,-60,150,"z") for i=1,7 do lantern(arena,Vector3.new(250+side*65,0,-69+i*21)) tree(arena,250+side*74,-69+i*21,i) end end
+ fence(arena,185,-60,130,"x") fence(arena,185,90,130,"x")
+ block(arena,"StartingStripe",Vector3.new(128,.18,12),Vector3.new(250,.12,-40),Color3.fromRGB(222,101,104))
+ local top=block(arena,"RaceTitle",Vector3.new(48,7,1),Vector3.new(250,16,86),dark) A.Face(top,"EGG RUSH\n10 BOXES • EQUAL STATS")
+ for i=1,10 do
+  local x=195+(i-1)*12 local col=C.Colors[(i-1)%9+1]
+  local box=block(arena,"EggBox"..i,Vector3.new(8,4.5,7),Vector3.new(x,2.25,72),col,true)
+  block(arena,"BoxTrim",Vector3.new(8.3,.5,7.3),Vector3.new(x,4.7,72),gold)
+  A.Part(arena,"BoxEgg",Vector3.new(2.7,3.7,2.7),Vector3.new(x,6.8,72),col,Enum.PartType.Ball)
+  A.Face(box,tostring(i)) A.Label(box,tostring(i),45,30,8,90)
+  local prompt=A.Prompt(box,"Claim egg","Box "..i,C.Rush.Hold,C.Rush.Range) prompt.Enabled=false
+  table.insert(W.Boxes,{Part=box,Prompt=prompt,Claimed=false,Number=i})
+ end
+ local lighting=game:GetService("Lighting") lighting.ClockTime=13 lighting.Brightness=2.5 lighting.Ambient=Color3.fromRGB(149,169,143) lighting.OutdoorAmbient=Color3.fromRGB(168,188,163)
+ local atmosphere=lighting:FindFirstChild("MLPAtmosphere") or Instance.new("Atmosphere") atmosphere.Name="MLPAtmosphere" atmosphere.Density=.2 atmosphere.Offset=.2 atmosphere.Color=Color3.fromRGB(201,230,247) atmosphere.Parent=lighting
+ return W
+end
+return W
+
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">RushService</string>
+          <ProtectedString name="Source">local R={State="Idle",Ends=os.clock()+1200,Members={},Round="",BoxesLeft=10}
+local Players=game:GetService("Players") local Http=game:GetService("HttpService")
+function R.Init(G)
+ R.G=G R.C=G.C.Rush R.Ends=os.clock()+R.C.Interval
+ for _,box in ipairs(G.World.Boxes) do
+  box.Prompt.PromptButtonHoldBegan:Connect(function(p) R.StartHold(p,box) end)
+  box.Prompt.PromptButtonHoldEnded:Connect(function(p) local e=R.Members[p] if e and e.Hold then e.Hold.Ended=os.clock() end end)
+  box.Prompt.Triggered:Connect(function(p) R.Claim(p,box) end)
+ end
+end
+function R.Begin(practice)
+ if R.State~="Idle" then return false end
+ R.State="Registration" R.Ends=os.clock()+(practice and 10 or R.C.Registration) R.Round=Http:GenerateGUID(false) R.BoxesLeft=10
+ for _,p in ipairs(Players:GetPlayers()) do R.G.Tell(p,"Egg Rush registration is open! Join at the portal or use Join Rush.") end return true
+end
+function R.Join(p)
+ if R.State~="Registration" then return false,"Registration is closed." end
+ if R.Members[p] then return false,"You are already registered." end
+ if not R.G.Ready(p) then return false,"Wait for your profile and character to be ready." end
+ local r=R.G.Root(p) if not r then return false,"Character unavailable." end
+ R.Members[p]={Return=p.Character:GetPivot(),Claimed=false,LastHit=0,LastSwing=0}
+ R.G.RuntimeFor(p).InRush=true return true,"Joined Egg Rush. Registration ends in "..math.ceil(R.Ends-os.clock()).."s."
+end
+function R.Leave(p,respawn)
+ local entry=R.Members[p] if not entry then return end R.Members[p]=nil
+ local rt=R.G.RuntimeFor(p) rt.InRush=false rt.ClaimProgress=0
+ local r=R.G.Root(p) local h=R.G.Humanoid(p)
+ if r then r.Anchored=false if not respawn then p.Character:PivotTo(entry.Return or CFrame.new(0,4,-88)) end end
+ if h then h.WalkSpeed=R.G.D.Get(p) and R.G.Speed(R.G.D.Get(p).Data) or 16 h.JumpPower=entry.JumpPower or 50 h.JumpHeight=entry.JumpHeight or 7.2 h.AutoRotate=true end
+ for _,parent in ipairs({p.Character,p:FindFirstChildOfClass("Backpack")}) do if parent then local bat=parent:FindFirstChild("Forest Bat") if bat then bat:Destroy() end end end
+end
+function R.StartHold(p,box)
+ local entry=R.Members[p] local r=R.G.Root(p)
+ if R.State~="Running" or not entry or entry.Claimed or entry.Reserving or box.Claimed or box.Reserved or not r or (r.Position-box.Part.Position).Magnitude&gt;R.C.Range then return false end
+ entry.Hold={Box=box,Start=os.clock(),Hit=entry.LastHit} return true
+end
+function R.Claim(p,box)
+ local entry=R.Members[p] local r=R.G.Root(p)
+ if R.State~="Running" or not entry or entry.Claimed or entry.Reserving or box.Claimed or box.Reserved or not r or (r.Position-box.Part.Position).Magnitude&gt;R.C.Range then return false end
+ local hold=entry.Hold
+ if not hold or hold.Box~=box or os.clock()-hold.Start&lt;R.C.Hold-.02 or hold.Hit~=entry.LastHit or (hold.Ended and os.clock()-hold.Ended&gt;.15) then return false end
+ box.Reserved=p entry.Reserving=true entry.Hold=nil
+ local key="rush:"..R.Round..":"..box.Number local pet=R.G.NewPet(R.G.Roll())
+ task.spawn(function()
+  local ok=false local err
+  for _=1,3 do ok,err=R.G.InboxGrant(p,key,pet) if ok then break end task.wait(.7) end
+  entry.Reserving=false box.Reserved=nil
+  if ok then
+   entry.Claimed=true box.Claimed=true R.BoxesLeft-=1 box.Part.Transparency=.6 box.Prompt.Enabled=false
+   if p.Parent then R.G.Tell(p,"Egg #"..box.Number.." secured! Open it from your Reward Inbox.") end
+  elseif p.Parent then R.G.Tell(p,err or "Could not save this claim. Please retry.") end
+ end) return true
+end
+function R.Swing(p)
+ local entry=R.Members[p] local a=R.G.Root(p) local tool=p.Character and p.Character:FindFirstChild("Forest Bat")
+ if R.State~="Running" or not entry or not a or not tool or os.clock()-entry.LastSwing&lt;R.C.Cooldown then return false end entry.LastSwing=os.clock()
+ R.G.Remote:FireAllClients("Swing",p.UserId)
+ for other,victim in pairs(R.Members) do local b=R.G.Root(other) local h=R.G.Humanoid(other)
+  if other~=p and b and h and h.Health&gt;0 then local delta=b.Position-a.Position local distance=delta.Magnitude
+   if distance&gt;0 and distance&lt;=R.C.Range and a.CFrame.LookVector:Dot(delta.Unit)&gt;.15 and os.clock()-victim.LastHit&gt;=R.C.Grace then
+    victim.LastHit=os.clock() victim.Hold=nil
+    pcall(function() b:SetNetworkOwner(nil) end) b.AssemblyLinearVelocity=a.CFrame.LookVector*42+Vector3.new(0,18,0)
+    task.delay(.25,function() if b.Parent then pcall(function() b:SetNetworkOwnershipAuto() end) end end)
+   end
+  end
+ end return true
+end
+function R.Tick(dt)
+ for p,e in pairs(R.Members) do
+  local r=R.G.Root(p) local h=R.G.Humanoid(p) local rt=R.G.RuntimeFor(p)
+  if not r or not h or h.Health&lt;=0 or not p.Parent then R.Leave(p,true)
+  elseif R.State=="Running" then
+   h.WalkSpeed=R.C.Speed
+   if e.LastPosition and (r.Position-e.LastPosition).Magnitude&gt;math.max(8,70*dt) then p.Character:PivotTo(CFrame.new(e.LastPosition)) e.Hold=nil end
+   if r.Position.X&lt;183 or r.Position.X&gt;317 or r.Position.Z&lt; -61 or r.Position.Z&gt;92 then p.Character:PivotTo(CFrame.new(250,4,-40)) e.Hold=nil end
+   e.LastPosition=r.Position
+   if e.Hold then
+    if (r.Position-e.Hold.Box.Part.Position).Magnitude&gt;R.C.Range or e.Hold.Hit~=e.LastHit or (e.Hold.Ended and os.clock()-e.Hold.Ended&gt;.15) then e.Hold=nil end
+   end
+   rt.ClaimProgress=e.Hold and math.clamp((os.clock()-e.Hold.Start)/R.C.Hold,0,1) or 0
+  end
+ end
+ if os.clock()&lt;R.Ends then
+  if R.State=="Running" then
+   local eligible=false for _,e in pairs(R.Members) do if not e.Claimed or e.Reserving then eligible=true end end
+   if R.BoxesLeft==0 or not eligible then R.Ends=os.clock() end
+  end return
+ end
+ if R.State=="Idle" then R.Begin(false)
+ elseif R.State=="Registration" then
+  if next(R.Members)==nil then R.State="Idle" R.Ends=os.clock()+R.C.Interval return end
+  R.State="Teleporting" local i=0
+  for p,e in pairs(R.Members) do local r=R.G.Root(p) local h=R.G.Humanoid(p) if r and h then
+   i+=1 e.JumpPower=h.JumpPower e.JumpHeight=h.JumpHeight
+   local pos=Vector3.new(196+((i-1)%10)*12,4,-40-math.floor((i-1)/10)*5)
+   p.Character:PivotTo(CFrame.lookAt(pos,Vector3.new(pos.X,4,72))) r.Anchored=true h.WalkSpeed=0 e.LastPosition=pos
+  end end
+  R.State="Countdown" R.Ends=os.clock()+R.C.Countdown
+ elseif R.State=="Countdown" then
+  local A=require(game.ReplicatedStorage.MyLittlePets.Assets)
+  for p,e in pairs(R.Members) do local r=R.G.Root(p) local h=R.G.Humanoid(p) if r and h then
+   r.Anchored=false h.WalkSpeed=R.C.Speed h.JumpPower=50 h.JumpHeight=7.2
+   local s=R.G.D.Get(p) local bat=A.Bat(s and math.max(1,s.Data.Skin) or 1,R.G.C,true) bat.Parent=p.Backpack bat.Activated:Connect(function() R.Swing(p) end)
+   h:EquipTool(bat) e.LastPosition=r.Position
+  end end
+  for _,box in ipairs(R.G.World.Boxes) do box.Claimed=false box.Reserved=nil box.Part.Transparency=0 box.Prompt.Enabled=true end
+  R.State="Running" R.Ends=os.clock()+R.C.Duration
+ elseif R.State=="Running" then R.State="Results" R.Ends=os.clock()+R.C.Results for _,box in ipairs(R.G.World.Boxes) do box.Prompt.Enabled=false end
+ elseif R.State=="Results" then
+  -- Finish any in-flight durable claim before tearing down the round.
+  for _,e in pairs(R.Members) do if e.Reserving then R.Ends=os.clock()+.5 return end end
+  R.State="Returning" local all={} for p in pairs(R.Members) do table.insert(all,p) end for _,p in ipairs(all) do R.Leave(p) end R.State="Idle" R.Ends=os.clock()+R.C.Interval
+ end
+end
+return R
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">WeatherService</string>
+          <ProtectedString name="Source">local V={Name="Sunny",Ends=os.clock()+600,Definition=nil,NextStrike=0}
+local Http=game:GetService("HttpService") local rng=Random.new()
+function V.Init(G) V.G=G V.Ends=os.clock()+rng:NextInteger(480,720) end
+function V.Start(index)
+ local w=V.G.C.Weather[index] if not w then return false end
+ V.Name=w.Name V.Definition=w V.Ends=os.clock()+120 V.NextStrike=os.clock()+10
+ local lighting=game:GetService("Lighting") lighting.Ambient=w.Color:Lerp(Color3.fromRGB(115,128,143),.65) lighting.Brightness=1.6
+ local atmosphere=lighting:FindFirstChild("MLPAtmosphere") if atmosphere then atmosphere.Color=w.Color:Lerp(Color3.new(1,1,1),.65) end
+ for _,p in ipairs(game.Players:GetPlayers()) do V.G.Tell(p,w.Name.." has arrived! Only direct hits can mutate equipped pets.") end return true
+end
+function V.Tick()
+ if os.clock()&gt;=V.Ends then
+  if V.Definition then
+   V.Name="Sunny" V.Definition=nil V.Ends=os.clock()+rng:NextInteger(480,720)
+   local lighting=game:GetService("Lighting") lighting.Ambient=Color3.fromRGB(149,169,143) lighting.Brightness=2.5
+   local a=lighting:FindFirstChild("MLPAtmosphere") if a then a.Color=Color3.fromRGB(201,230,247) end
+  else local n=rng:NextNumber(0,100) local total=0 for i,w in ipairs(V.G.C.Weather) do total+=w.Weight if n&lt;total then V.Start(i) break end end end
+ end
+ if not V.Definition or os.clock()&lt;V.NextStrike then return end V.NextStrike=os.clock()+10
+ local eligible={}
+ for p,s in pairs(V.G.D.All()) do local r=V.G.Root(p) local rt=V.G.RuntimeFor(p)
+  if V.G.Ready(p) and r and not rt.InRush and math.abs(r.Position.X)&lt;62 and r.Position.Z&gt; -60 and r.Position.Z&lt;540 and (rt.CurrentSector or 1)&lt;=s.Data.Sector then
+   for _,pet in ipairs(s.Data.Pets) do if pet.Equipped and not table.find(pet.Mutations,V.Definition.Mutation) then table.insert(eligible,{Player=p,Uid=pet.Uid}) end end
+  end
+ end
+ for _=1,math.min(3,#eligible) do
+  local chosen=table.remove(eligible,rng:NextInteger(1,#eligible)) local strike=Http:GenerateGUID(false) local definition=V.Definition
+  V.G.Remote:FireAllClients("Strike",{Owner=chosen.Player.UserId,Uid=chosen.Uid,Weather=definition.Name,Color=definition.Color,Id=strike})
+  task.delay(.3,function()
+   if V.Definition~=definition then return end
+   local ok,result=V.G.Mutate(chosen.Player,chosen.Uid,definition,strike,rng:NextNumber())
+   if ok and result.Success then V.G.Rebuild(chosen.Player) V.G.Tell(chosen.Player,result.Name.." gained "..result.Mutation.." permanently!")
+   elseif ok and chosen.Player.Parent then V.G.Tell(chosen.Player,"Direct hit — mutation roll missed this time.") end
+  end)
+ end
+end
+return V
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">ShopService</string>
+          <ProtectedString name="Source">local S={Metadata={},Pending={}}
+local M=game:GetService("MarketplaceService") local Players=game:GetService("Players") local Run=game:GetService("RunService")
+local C=require(game.ReplicatedStorage.MyLittlePets.Config) local D=require(script.Parent.Profiles)
+function S.Init(G)
+ S.G=G
+ for i,u in ipairs(C.Upgrades) do
+  S.Metadata[i]={Tier=i,Multiplier=u.Multiplier,TargetPrice=u.TargetPrice,Available=false,Reason="Product not configured"}
+  if u.PassId&gt;0 then task.spawn(function()
+   local ok,info=pcall(function() return M:GetProductInfoAsync(u.PassId,Enum.InfoType.GamePass) end)
+   if ok and info and info.IsForSale and type(info.PriceInRobux)=="number" then S.Metadata[i]={Tier=i,Multiplier=u.Multiplier,TargetPrice=u.TargetPrice,Price=info.PriceInRobux,Available=not Run:IsStudio(),PassId=u.PassId,Reason=Run:IsStudio() and "Live purchases are disabled in Studio" or nil} end
+  end) end
+ end
+ M.PromptGamePassPurchaseFinished:Connect(function(p,_,purchased)
+  S.Pending[p]=nil G.Remote:FireClient(p,"PurchaseClosed",purchased)
+  if purchased then task.spawn(function() S.Reconcile(p) end) end
+ end)
+ M.ProcessReceipt=function(receipt)
+  local p=Players:GetPlayerByUserId(receipt.PlayerId) local session=p and D.Get(p)
+  if not session or session.Mode~="Cloud saved" then return Enum.ProductPurchaseDecision.NotProcessedYet end
+  local product
+  for _,b in ipairs(C.Boosters) do if b.ProductId&gt;0 and b.ProductId==receipt.ProductId then product={Kind="Booster",Id=b.Id} end end
+  for _,v in ipairs(C.PremiumProducts) do if v.ProductId==receipt.ProductId and v.Enabled then product=v end end
+  if not product then return Enum.ProductPurchaseDecision.NotProcessedYet end
+  local key="receipt:"..receipt.PurchaseId
+  local pet=product.Kind=="Pet" and C.Species[product.Species] and G.NewPet(product.Species) or nil
+  local ok=D.Commit(session,function(d)
+   if d.Receipts[key] then return true,true end
+   if product.Kind=="Booster" then d.Boosters[product.Id]=(d.Boosters[product.Id] or 0)+1
+   elseif pet then d.Inbox[key]={Pet=pet,At=os.time(),Source="Premium purchase"}
+   else return false,"Product grant unavailable." end
+   d.Receipts[key]=true return true,true
+  end)
+  return ok and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
+ end
+end
+function S.Reconcile(p)
+ local s=D.Get(p) if not D.Active(s) or s.Mode~="Cloud saved" then return end local highest=s.Data.Tier
+ for i,u in ipairs(C.Upgrades) do if u.PassId&gt;0 then local ok,owns=pcall(function() return M:UserOwnsGamePassAsync(p.UserId,u.PassId) end) if ok and owns then highest=math.max(highest,i) end end end
+ if highest&gt;s.Data.Tier then
+  for _=1,3 do
+   local ok=D.Commit(s,function(d) d.Tier=math.max(d.Tier,highest) return true,true end)
+   if ok then S.G.Tell(p,"Permanent farming multiplier verified: "..2^highest.."×") return end task.wait(2)
+  end
+ end
+end
+function S.Purchase(p,tier)
+ local s=D.Get(p) local meta=S.Metadata[tier]
+ if not D.Active(s) or s.Mode~="Cloud saved" then return false,"Purchases require a live server with a saved profile." end
+ if not meta or not meta.Available then return false,"This product is not configured for sale yet." end
+ if tier~=s.Data.Tier+1 then return false,"Only the next permanent tier can be purchased." end
+ if S.Pending[p] and os.clock()-S.Pending[p]&lt;90 then return false,"A purchase is already pending." end
+ S.Pending[p]=os.clock() local ok=pcall(function() M:PromptGamePassPurchase(p,meta.PassId) end)
+ if not ok then S.Pending[p]=nil return false,"Roblox checkout is unavailable. Please retry later." end return true,"Purchase pending in Roblox checkout."
+end
+return S
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">LeaderboardService</string>
+          <ProtectedString name="Source">local L={Cache={},Refreshing=false,Server={},Global={},GlobalStatus="Loading global rankings",Updated=0}
+local DS=game:GetService("DataStoreService") local ordered=DS:GetOrderedDataStore("MLP_RateRank_v2") local summaries=DS:GetDataStore("MLP_RateSummary_v2")
+function L.Init(G) L.G=G end
+local function compare(a,b) local c=L.G.B.Cmp(a.Rate,b.Rate) return c==0 and a.UserId&lt;b.UserId or c&gt;0 end
+local function text(title,rows,status)
+ local lines={title,"#  PLAYER     COINS/SEC     COINS"}
+ for i,v in ipairs(rows) do table.insert(lines,string.format("%d  %s   %s/s   %s",i,v.Name:sub(1,14),L.G.B.Format(v.Rate),L.G.B.Format(v.Coins))) if i==10 then break end end
+ table.insert(lines,status) return table.concat(lines,"\n")
+end
+function L.RefreshServer()
+ local rows={} for p,s in pairs(L.G.D.All()) do if L.G.D.Active(s) then table.insert(rows,{Name=p.DisplayName,UserId=p.UserId,Rate=L.G.Team(s.Data),Coins=s.Data.Coins,At=os.time()}) end end
+ table.sort(rows,compare) L.Server=rows
+ L.G.World.ServerText.Text=text("SERVER LEADERBOARD",rows,"Updated "..os.date("!%H:%M:%S").." UTC • every 5s")
+end
+function L.RefreshGlobal()
+ if L.Refreshing then return end
+ local anyCloud=false
+ for _,s in pairs(L.G.D.All()) do if s.Mode=="Cloud saved" and L.G.D.Active(s) then anyCloud=true end end
+ if not anyCloud then L.GlobalStatus="Global rankings require cloud storage • Studio session" L.G.World.GlobalText.Text=text("GLOBAL LEADERBOARD",{},L.GlobalStatus) return end
+ L.Refreshing=true
+ local ok,err=pcall(function()
+  local rows={} local pages=ordered:GetSortedAsync(false,20) local boundary=nil
+  for page=1,5 do
+   local entries=pages:GetCurrentPage()
+   for _,entry in ipairs(entries) do
+    local cached=L.Cache[entry.key]
+    local row=cached and os.time()-cached.At&lt;65 and cached.Row or nil
+    if not row then
+     assert(DS:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.GetAsync)&gt;5,"Waiting for read budget")
+     row=summaries:GetAsync(entry.key) if row then L.Cache[entry.key]={At=os.time(),Row=row} end
+    end
+    if row and type(row.Rate)=="string" and type(row.Coins)=="string" then table.insert(rows,row) end
+   end
+   table.sort(rows,compare)
+   boundary=rows[10] and L.G.B.Score(rows[10].Rate) or nil
+   if pages.IsFinished or (boundary and entries[#entries] and entries[#entries].value&lt;boundary) then break end
+   assert(page&lt;5,"Too many tied rankings; retry later") pages:AdvanceToNextPageAsync()
+  end
+  table.sort(rows,compare) L.Global=rows L.Updated=os.time() L.GlobalStatus="Updated "..os.date("!%H:%M:%S").." UTC • cached"
+ end)
+ L.Refreshing=false
+ if not ok then L.GlobalStatus="Global service unavailable • retrying" warn("Global leaderboard unavailable: "..tostring(err)) end
+ L.G.World.GlobalText.Text=text("GLOBAL LEADERBOARD",L.Global,L.GlobalStatus)
+end
+function L.Publish()
+ for p,s in pairs(L.G.D.All()) do if s.Mode=="Cloud saved" and L.G.D.Active(s) then
+  local row={Name=p.DisplayName,UserId=p.UserId,Rate=L.G.Team(s.Data),Coins=s.Data.Coins,At=os.time()}
+  pcall(function() summaries:SetAsync(tostring(p.UserId),row) ordered:SetAsync(tostring(p.UserId),L.G.B.Score(row.Rate)) end)
+ end end
+end
+return L
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript">
+        <Properties>
+          <string name="Name">Tests</string>
+          <ProtectedString name="Source">-- Integration checks are opt-in through the Studio-only MLP_RunTests workspace attribute.
+local T={}
+function T.Run(G,R,V,Shop)
+ local Players=game:GetService("Players") local Http=game:GetService("HttpService")
+ local p=Players:GetPlayers()[1] or Players.PlayerAdded:Wait() local deadline=os.clock()+20
+ while (not G.D.Get(p) or not G.Root(p)) and os.clock()&lt;deadline do task.wait(.1) end
+ local s=G.D.Get(p) assert(s,"Test player profile missing") local saved=G.D.Copy(s.Data) local rt=G.RuntimeFor(p) local start=G.Root(p).CFrame
+ local results={} local failures={}
+ local function test(name,fn)
+  s.Data=G.NewProfile() rt.Cooldown={} rt.InRush=false G.Root(p).Anchored=true
+  local ok,err=pcall(fn) table.insert(results,{Name=name,Passed=ok,Error=not ok and tostring(err) or nil})
+  if ok then print("PASS • "..name) else table.insert(failures,name) warn("FAIL • "..name.." • "..tostring(err)) end
+ end
+ local B=G.B local C=G.C
+ test("Exact balances beyond floating-point integer range",function()
+  assert(B.Add("9007199254740992","1")=="9007199254740993")
+  assert(B.Sub("1000000000000000000000","1")=="999999999999999999999")
+  assert(B.Mul("12345678901234567890","10")=="123456789012345678900")
+  local q,r=B.Div("123456789012345678901","97") assert(B.Add(B.Mul(q,"97"),r)=="123456789012345678901")
+ end)
+ test("Forest roster, approved odds, prices and geometry",function()
+  C.Validate() assert(#G.World.Targets==60 and #G.World.Boxes==10 and #G.World.Eggs==9)
+  for i,box in ipairs(G.World.Boxes) do assert(box.Number==i and box.Prompt.HoldDuration==.75) end
+ end)
+ test("One free starter with discovery and 10K base rate",function() assert(#s.Data.Pets==1 and s.Data.Pets[1].Equipped and G.Team(s.Data)=="10000" and s.Data.Discovered[C.Species[1].Id]) end)
+ test("Proportional farming conservation on a final tick",function()
+  local shares,left=G.Allocate("100000",{{Amount="50000"},{Amount="100000"}})
+  assert(left=="0" and B.Add(shares[1],shares[2])=="100000" and B.Cmp(shares[1],"50000")&lt;=0)
+  local a,b=G.Allocate("100000",{{Amount="10000"}}) assert(a[1]=="10000" and b=="90000")
+ end)
+ test("Atomic hatch and request replay",function()
+  s.Data.Coins="1000000" p.Character:PivotTo(CFrame.new(0,5,-132)) local req={Id=Http:GenerateGUID(false),Time=os.time()}
+  local ok,res=G.Hatch(p,req) assert(ok and #s.Data.Pets==2 and s.Data.Coins=="750000")
+  local again,result,replayed=G.Hatch(p,req) assert(again and replayed and result.Uid==res.Uid and #s.Data.Pets==2 and s.Data.Coins=="750000")
+ end)
+ test("Full and unaffordable eggs never spend",function()
+  p.Character:PivotTo(CFrame.new(0,5,-132)) s.Data.Coins="0"
+  local ok=G.Hatch(p,{Id=Http:GenerateGUID(false),Time=os.time()}) assert(not ok and #s.Data.Pets==1 and s.Data.Coins=="0")
+  for _=2,200 do table.insert(s.Data.Pets,G.NewPet(1)) end s.Data.Coins="1000000" rt.Cooldown.Hatch=0
+  assert(not G.Hatch(p,{Id=Http:GenerateGUID(false),Time=os.time()})) assert(s.Data.Coins=="1000000" and #s.Data.Pets==200)
+ end)
+ test("Normal rewards exclude Divine and EXCLUSIVE",function() for _=1,5000 do assert(C.Species[G.Roll()].Rarity&lt;9) end end)
+ test("Equipment ownership and slot limits",function()
+  for i=2,4 do G.GrantPet(s.Data,G.NewPet(i)) end
+  assert(not G.Equip(p,"not-owned")) assert(G.Equip(p,s.Data.Pets[2].Uid)) assert(G.Equip(p,s.Data.Pets[3].Uid)) assert(not G.Equip(p,s.Data.Pets[4].Uid))
+ end)
+ test("Food costs, consumption and capped-pet protection",function()
+  s.Data.Coins="1000000" assert(G.BuyFood(p,"Apple")) assert(s.Data.Coins=="900000" and s.Data.Food.Apple==1)
+  assert(G.Feed(p,s.Data.Pets[1].Uid,"Apple")) assert(s.Data.Pets[1].Level==2 and s.Data.Food.Apple==0)
+  s.Data.Pets[1].Level=100 s.Data.Food.Apple=1 assert(not G.Feed(p,s.Data.Pets[1].Uid,"Apple")) assert(s.Data.Food.Apple==1)
+ end)
+ test("Sequential gates and duplicate charging protection",function()
+  s.Data.Coins="5000000000" p.Character:PivotTo(CFrame.new(0,4,58)) assert(G.Unlock(p,2)) assert(s.Data.Sector==2 and s.Data.Coins=="4998000000")
+  assert(not G.Unlock(p,2) and s.Data.Coins=="4998000000") p.Character:PivotTo(CFrame.new(0,4,298)) assert(not G.Unlock(p,4))
+ end)
+ test("Mutation stacking, failed rolls and duplicate strike protection",function()
+  p.Character:PivotTo(CFrame.new(20,4,0)) local uid=s.Data.Pets[1].Uid
+  local ok,res=G.Mutate(p,uid,C.Weather[1],"failed",.99) assert(ok and not res.Success and #s.Data.Pets[1].Mutations==0)
+  for i,w in ipairs(C.Weather) do assert(G.Mutate(p,uid,w,"strike_"..i,0)) end
+  assert(#s.Data.Pets[1].Mutations==6 and C.MutationFactor(s.Data.Pets[1])==47 and G.Team(s.Data)=="470000")
+  G.Mutate(p,uid,C.Weather[1],"strike_1",0) assert(#s.Data.Pets[1].Mutations==6)
+ end)
+ test("All variants and Huge are independent from rarity",function()
+  local pet=s.Data.Pets[1] pet.Variant="Rainbow" pet.Size="Huge" assert(C.Power(pet,0,B)=="300000")
+  pet.Level=100 assert(C.Power(pet,0,B)=="597000") assert(C.Species[pet.Species].Rarity==1)
+ end)
+ test("Collection bat rewards use permanent discoveries",function()
+  for i=2,5 do G.GrantPet(s.Data,G.NewPet(i)) end assert(s.Data.Bats["1"])
+  table.remove(s.Data.Pets,2) G.Rewards(s.Data) assert(s.Data.Bats["1"] and s.Data.Discovered[C.Species[2].Id])
+ end)
+ test("Full-inventory Egg Rush claim stays durable in inbox",function()
+  for _=2,200 do table.insert(s.Data.Pets,G.NewPet(1)) end local pet=G.NewPet(7)
+  assert(G.InboxGrant(p,"test_round_box",pet)) assert(s.Data.Inbox.test_round_box)
+  assert(G.InboxGrant(p,"test_round_box",G.NewPet(8))) assert(s.Data.Inbox.test_round_box.Pet.Uid==pet.Uid)
+  assert(not G.OpenReward(p,"test_round_box")) table.remove(s.Data.Pets,200)
+  assert(G.OpenReward(p,"test_round_box")) assert(#s.Data.Pets==200 and not s.Data.Inbox.test_round_box) assert(not G.OpenReward(p,"test_round_box"))
+ end)
+ test("Booster single-use, no overlap, absolute expiry",function()
+  s.Data.Boosters.Basic=2 assert(G.Boost(p,"Basic")) assert(s.Data.Boosters.Basic==1 and s.Data.ActiveBooster.Expires&gt;os.time()+290)
+  assert(not G.Boost(p,"Basic") and s.Data.Boosters.Basic==1) s.Data.ActiveBooster.Expires=os.time()-1 assert(G.Boost(p,"Basic")) assert(s.Data.Boosters.Basic==0)
+ end)
+ test("Arena claim requires active participation and a completed hold",function()
+  assert(not R.StartHold(p,G.World.Boxes[1])) assert(not R.Claim(p,G.World.Boxes[1])) assert(not R.Swing(p))
+ end)
+ test("Complete Egg Rush countdown, durable claim, and safe return",function()
+  local before=G.Root(p).CFrame
+  assert(R.Begin(true)) assert(R.Join(p))
+  R.Ends=0 R.Tick(.1) assert(R.State=="Countdown" and G.Root(p).Anchored)
+  assert(not R.Claim(p,G.World.Boxes[1]))
+  R.Ends=0 R.Tick(.1) assert(R.State=="Running" and G.Humanoid(p).WalkSpeed==16)
+  local box=G.World.Boxes[1]
+  p.Character:PivotTo(CFrame.new(box.Part.Position+Vector3.new(0,1,-4))) G.Root(p).Anchored=true
+  R.Members[p].LastPosition=G.Root(p).Position
+  assert(R.StartHold(p,box)) R.Members[p].Hold.Start=os.clock()-1
+  assert(R.Claim(p,box)) assert(not R.Claim(p,box))
+  task.wait(.15)
+  assert(box.Claimed and R.Members[p].Claimed)
+  local count=0 for _ in pairs(s.Data.Inbox) do count+=1 end assert(count==1)
+  R.Ends=0 R.Tick(.1) if R.State=="Running" then R.Ends=0 R.Tick(.1) end
+  R.Ends=0 R.Tick(.1)
+  assert(R.State=="Idle" and not R.Members[p] and not rt.InRush and not G.Root(p).Anchored)
+  assert((G.Root(p).Position-before.Position).Magnitude&lt;1)
+ end)
+ test("Studio cannot launch real checkout or grant unverified ownership",function() local before=s.Data.Tier assert(not Shop.Purchase(p,1)) assert(s.Data.Tier==before) end)
+ s.Data=saved G.D.Save(s,false) rt.InRush=false G.Root(p).Anchored=false p.Character:PivotTo(start) G.Rebuild(p)
+ workspace:SetAttribute("MLP_TestPassed",#results-#failures) workspace:SetAttribute("MLP_TestFailed",#failures)
+ workspace:SetAttribute("MLP_TestReport",Http:JSONEncode(results))
+ print(string.format("MY LITTLE PETS TESTS: %d passed, %d failed",#results-#failures,#failures))
+end
+return T
+</ProtectedString>
+        </Properties>
+      </Item>
+      <Item class="Script">
+        <Properties>
+          <string name="Name">GameServer</string>
+          <ProtectedString name="Source">local Players=game:GetService("Players") local RS=game:GetService("ReplicatedStorage") local Run=game:GetService("RunService")
+local folder=RS:WaitForChild("MyLittlePets")
+local C=require(folder.Config) local B=require(folder.BigNum) local D=require(script.Parent.Profiles) local G=require(script.Parent.GameService)
+local R=require(script.Parent.RushService) local V=require(script.Parent.WeatherService) local Shop=require(script.Parent.ShopService) local Boards=require(script.Parent.LeaderboardService)
+local W=require(script.Parent.World).Build(C)
+local remote=folder.Action G.SetWorld(W,remote) R.Init(G) V.Init(G) Shop.Init(G) Boards.Init(G)
+local function snapshot(p) G.Snapshot(p,R,V,Shop.Metadata) end
+local function result(p,ok,value,reveal)
+ if not ok then G.Tell(p,type(value)=="string" and value or "Please retry.")
+ elseif reveal and type(value)=="table" and value.Species then remote:FireClient(p,"Hatch",value) G.Rebuild(p)
+ elseif type(value)=="string" then G.Tell(p,value) end snapshot(p)
+end
+local function at(p,part,distance) local r=G.Root(p) return r and (r.Position-part.Position).Magnitude&lt;=(distance or 18) end
+W.EggPrompt.Triggered:Connect(function(p) if at(p,W.Egg,19) then remote:FireClient(p,"Open","Egg") end end)
+for _,egg in ipairs(W.Eggs) do egg.Prompt.Triggered:Connect(function(p) if at(p,egg.Part,14) then remote:FireClient(p,"Open","Index") end end) end
+W.ShopPrompt.Triggered:Connect(function(p) remote:FireClient(p,"Open","Shop") end)
+W.IndexPrompt.Triggered:Connect(function(p) remote:FireClient(p,"Open","Index") end)
+W.RushPrompt.Triggered:Connect(function(p)
+ if not at(p,W.RushPortal,18) then return end
+ if R.State=="Idle" and Run:IsStudio() then R.Begin(true) end
+ if R.State=="Registration" then result(p,R.Join(p)) else G.Tell(p,"Next Egg Rush in "..math.ceil(math.max(0,R.Ends-os.clock())).." seconds.") end
+end)
+for sector,gate in pairs(W.Gates) do gate.Prompt.Triggered:Connect(function(p) if not G.RuntimeFor(p).InRush then result(p,G.Unlock(p,sector)) end end) end
+local function safeSpawn(d)
+ local v=d.LastSafe if type(v)=="table" and #v==3 and type(v[1])=="number" and math.abs(v[1])&lt;60 and v[3]&gt;=-195 and v[3]&lt;(d.Sector-1)*120+55 then return CFrame.lookAt(Vector3.new(v[1],math.max(4,v[2]),v[3]),Vector3.new(v[1],math.max(4,v[2]),v[3]-10)) end
+ return CFrame.new(0,4,-88)
+end
+local function added(p)
+ local ok,s,err=pcall(D.Open,p,G.NewProfile)
+ if not ok or not s then p:Kick(err or "Saved profile unavailable. Please rejoin; existing progress is protected.") return end
+ if not p.Parent then D.Close(s) return end
+ G.Rewards(s.Data) G.RuntimeFor(p)
+ p.RespawnLocation=W.Spawn
+ local function character(char)
+  R.Leave(p,true) local r=char:WaitForChild("HumanoidRootPart",10) if not r then return end
+  task.wait(.15) if char.Parent then char:PivotTo(safeSpawn(s.Data)) end
+  local h=char:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed=G.Speed(s.Data) h.Died:Connect(function() R.Leave(p,true) end) end
+  G.Rebuild(p) snapshot(p)
+ end
+ p.CharacterAdded:Connect(character)
+ if p.Character then task.spawn(character,p.Character) end
+ local stats=Instance.new("Folder") stats.Name="leaderstats" stats.Parent=p
+ local coins=Instance.new("StringValue") coins.Name="Coins" coins.Parent=stats local rate=Instance.new("StringValue") rate.Name="Coins/sec" rate.Parent=stats
+ snapshot(p) task.spawn(function() Shop.Reconcile(p) end)
+end
+Players.PlayerAdded:Connect(added) Players.PlayerRemoving:Connect(function(p)
+ R.Leave(p,true) local rt=G.Runtime[p] if rt and rt.Visual then rt.Visual:Destroy() end
+ D.Close(D.Get(p)) G.Runtime[p]=nil Shop.Pending[p]=nil
+end)
+for _,p in ipairs(Players:GetPlayers()) do task.spawn(added,p) end
+remote.OnServerEvent:Connect(function(p,action,arg)
+ if type(action)~="string" or #action&gt;32 then return end
+ local s=D.Get(p) if not s then return end local rt=G.RuntimeFor(p)
+ local now=os.clock() local last=rt.Cooldown.Request or 0 if now-last&lt;.18 then return end rt.Cooldown.Request=now
+ if action=="Sync" then snapshot(p) return end
+ if type(arg)~="table" then arg={} end
+ local function handle()
+  if action=="LeaveRush" then R.Leave(p) snapshot(p) return end
+  if action=="JoinRush" then result(p,R.Join(p)) return end
+  if action=="Practice" then if Run:IsStudio() then R.Begin(true) result(p,R.Join(p)) else G.Tell(p,"Practice rounds are available in Studio only.") end return end
+  if action=="Swing" then R.Swing(p) return end
+  if action=="Save" then
+   if now-(rt.Cooldown.Save or 0)&lt;15 then return end rt.Cooldown.Save=now
+   result(p,D.Save(s,false),s.Mode=="Studio session" and "Studio session saved in server memory. Cloud saving is used in live servers." or "Progress saved.") return
+  end
+  if not G.Ready(p) then G.Tell(p,"Profile busy or unavailable. Please retry.") return end
+  if rt.InRush then G.Tell(p,"Finish or leave Egg Rush to manage your pets.") return end
+  if action=="Hatch" then local ok,v=G.Hatch(p,arg) result(p,ok,v,true)
+  elseif action=="Equip" and type(arg.Uid)=="string" then local ok,v=G.Equip(p,arg.Uid) if ok then G.Rebuild(p) end result(p,ok,v)
+  elseif action=="EquipBest" then local ok,v=G.EquipBest(p) if ok then G.Rebuild(p) end result(p,ok,v)
+  elseif action=="Feed" and type(arg.Uid)=="string" and type(arg.Food)=="string" then local ok,v=G.Feed(p,arg.Uid,arg.Food) if ok then G.Rebuild(p) end result(p,ok,v)
+  elseif action=="BuyFood" and type(arg.Food)=="string" then result(p,G.BuyFood(p,arg.Food))
+  elseif action=="Unlock" and type(arg.Sector)=="number" then result(p,G.Unlock(p,arg.Sector))
+  elseif action=="Boost" and type(arg.Booster)=="string" then result(p,G.Boost(p,arg.Booster))
+  elseif action=="Reward" and type(arg.Key)=="string" then local ok,v=G.OpenReward(p,arg.Key) result(p,ok,v,true)
+  elseif action=="BuyUpgrade" and type(arg.Tier)=="number" then result(p,Shop.Purchase(p,arg.Tier))
+  elseif action=="Skin" and type(arg.Rarity)=="number" then result(p,D.Commit(s,function(d)
+   local r=arg.Rarity if r~=0 and not d.Bats[tostring(r)] then return false,"Complete this rarity's Index first." end d.Skin=r return true,"Bat skin selected. Combat stats are unchanged."
+  end))
+  elseif action=="Delete" and type(arg.Uid)=="string" then
+   local ok,v=D.Commit(s,function(d)
+    if #d.Pets&lt;=1 then return false,"Keep at least one pet." end
+    for i,pet in ipairs(d.Pets) do if pet.Uid==arg.Uid then table.remove(d.Pets,i) return true,"Pet released. Its Index discovery remains." end end return false,"Pet not found."
+   end) if ok then G.Rebuild(p) end result(p,ok,v)
+  end
+ end
+ local ok,err=pcall(handle) if not ok then warn("Rejected action "..action..": "..tostring(err)) G.Tell(p,"That request could not finish. Your progress is protected; please retry.") end
+end)
+local elapsed=0 local raceTick=0 local boardAt=0 local saveAt=os.clock()+45 local globalAt=0 local publishAt=os.clock()+60
+local function targetVisible(t,visible)
+ for _,p in ipairs(t.Model:GetDescendants()) do if p:IsA("BasePart") then
+  if p:GetAttribute("OriginalTransparency")==nil then p:SetAttribute("OriginalTransparency",p.Transparency) end
+  p.Transparency=visible and p:GetAttribute("OriginalTransparency") or 1 p.CanCollide=visible and p.Name=="ChestBody"
+ end end t.Label.Parent.Enabled=visible
+end
+Run.Heartbeat:Connect(function(dt)
+ raceTick+=dt if raceTick&gt;=.1 then local step=raceTick raceTick=0 R.Tick(step) end
+ elapsed+=dt if elapsed&lt;1 then return end local step=math.min(elapsed,1.25) elapsed=0 local now=os.clock()
+ local assignments={}
+ for _,t in ipairs(W.Targets) do if t.Left=="0" and now&gt;=t.Respawn then t.Left=t.Max t.Model:ScaleTo(1) targetVisible(t,true) end end
+ for p,s in pairs(D.All()) do
+  local rt=G.RuntimeFor(p) local r=G.Root(p) rt.Assigned=nil
+  if r and G.Ready(p) and not rt.InRush then
+   local d=s.Data local current=math.clamp(math.floor((r.Position.Z+60)/120)+1,1,5) rt.CurrentSector=current
+   if current&gt;d.Sector or math.abs(r.Position.X)&gt;95 or r.Position.Z&gt;541 then p.Character:PivotTo(CFrame.new(0,4,(d.Sector-1)*120+25))
+   else
+    if r.Position.Y&gt; -2 and r.Position.Y&lt;20 and r.Position.Z&gt; -200 and math.abs(r.Position.X)&lt;60 then d.LastSafe={r.Position.X,4,r.Position.Z} end
+    local nearest local distance=28
+    for _,t in ipairs(W.Targets) do if t.Sector&lt;=d.Sector and t.Left~="0" then local dist=(r.Position-t.Part.Position).Magnitude if dist&lt;distance then nearest=t distance=dist end end end
+    if nearest then
+     local scaled=B.Add(B.MulSmall(G.Team(d),math.floor(step*1000)),rt.Fraction or "0") local amount,remainder=B.Div(scaled,"1000") rt.Fraction=remainder
+     if amount~="0" then assignments[nearest]=assignments[nearest] or {} table.insert(assignments[nearest],{Player=p,Amount=amount,Session=s,Time=step}) rt.Assigned=nearest end
+    end
+   end
+   local h=G.Humanoid(p) if h then h.WalkSpeed=G.Speed(d) end
+  end
+  for _,model in pairs(rt.Models) do model:SetAttribute("InRush",rt.InRush or false) model:SetAttribute("Working",rt.Assigned~=nil) if rt.Assigned then model:SetAttribute("Target",rt.Assigned.Part.Position) end end
+ end
+ for target,requests in pairs(assignments) do
+  table.sort(requests,function(a,b) return a.Player.UserId&lt;b.Player.UserId end)
+  local shares,left=G.Allocate(target.Left,requests) target.Left=left
+  for i,q in ipairs(requests) do if shares[i]~="0" then
+   q.Session.Data.Coins=B.Add(q.Session.Data.Coins,shares[i])
+   for _,pet in ipairs(q.Session.Data.Pets) do if pet.Equipped then local before=pet.Level G.XP(pet,q.Time) if pet.Level~=before then q.Session.Revision+=1 end end end
+  end end
+  if target.Left=="0" then target.Respawn=now+target.Delay targetVisible(target,false)
+  else local percent=tonumber((B.Div(B.MulSmall(target.Left,100),target.Max))) or 0 target.Model:ScaleTo(.45+.55*percent/100) end
+  target.Label.Text=target.Left=="0" and "Regrowing…" or target.Model.Name:gsub("_%d+$","").."\n"..B.Format(target.Left)
+ end
+ V.Tick()
+ for p,s in pairs(D.All()) do if p:FindFirstChild("leaderstats") then p.leaderstats.Coins.Value=B.Format(s.Data.Coins) p.leaderstats["Coins/sec"].Value=B.Format(G.Team(s.Data)) end snapshot(p) end
+ if now&gt;=boardAt then boardAt=now+5 Boards.RefreshServer() end
+ if now&gt;=saveAt then saveAt=now+45 for _,s in pairs(D.All()) do task.spawn(function() local rev=s.Revision D.Save(s,false) if s.Revision~=rev and s.Player.Parent then G.Rebuild(s.Player) end end) end end
+ if now&gt;=globalAt then globalAt=now+30 task.spawn(Boards.RefreshGlobal) end
+ if now&gt;=publishAt then publishAt=now+60 task.spawn(Boards.Publish) end
+end)
+game:BindToClose(function()
+ local remaining=0 for _,s in pairs(D.All()) do remaining+=1 task.spawn(function() D.Close(s) remaining-=1 end) end
+ local deadline=os.clock()+25 while remaining&gt;0 and os.clock()&lt;deadline do task.wait(.1) end
+end)
+if Run:IsStudio() and workspace:GetAttribute("MLP_RunTests") then task.spawn(function() require(script.Parent.Tests).Run(G,R,V,Shop) end) end
+print("My Little Pets v2 ready • 7 systems connected • exact coin arithmetic • cloud profiles on live servers")
+
+
+</ProtectedString>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterPlayerScripts">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="Folder">
+        <Properties>
+          <string name="Name">MyLittlePets</string>
+        </Properties>
+        <Item class="LocalScript">
+          <Properties>
+            <string name="Name">GameClient</string>
+            <ProtectedString name="Source">local Players=game:GetService("Players") local RS=game:GetService("ReplicatedStorage") local Run=game:GetService("RunService") local Http=game:GetService("HttpService") local Tween=game:GetService("TweenService")
+local player=Players.LocalPlayer local folder=RS:WaitForChild("MyLittlePets")
+local C=require(folder:WaitForChild("Config")) local B=require(folder:WaitForChild("BigNum")) local A=require(folder:WaitForChild("Assets")) local remote=folder:WaitForChild("Action")
+local gui=Instance.new("ScreenGui") gui.Name="MyLittlePetsUI" gui.ResetOnSpawn=false gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling gui.Parent=player:WaitForChild("PlayerGui")
+local palette={Ink=Color3.fromRGB(30,53,69),Blue=Color3.fromRGB(25,109,160),Navy=Color3.fromRGB(22,67,92),Cream=Color3.fromRGB(246,250,238),Green=Color3.fromRGB(44,143,92),Gold=Color3.fromRGB(255,205,66)}
+local data local view="Pets" local biome="Forest" local selected local food=1 local page=1 local petTab="Equipped" local lastRevision=-1 local reduced=false local detailOpen=false local deleteConfirm=false
+local render local detail local pendingHatch=nil local open
+local function corner(o,r) local c=Instance.new("UICorner") c.CornerRadius=UDim.new(0,r or 12) c.Parent=o end
+local function stroke(o,color,w) local s=Instance.new("UIStroke") s.Color=color or Color3.fromRGB(255,255,255) s.Thickness=w or 1 s.Transparency=.6 s.Parent=o end
+local function frame(parent,name,size,pos,color)
+ local f=Instance.new("Frame") f.Name=name f.Size=size f.Position=pos f.BackgroundColor3=color or palette.Cream f.BorderSizePixel=0 f.Parent=parent corner(f) return f
+end
+local function label(parent,text,size,pos,ts,color)
+ local t=Instance.new("TextLabel") t.BackgroundTransparency=1 t.Size=size t.Position=pos t.Font=Enum.Font.GothamBold t.TextSize=ts or 14 t.TextColor3=color or palette.Ink t.Text=text t.TextWrapped=true t.Parent=parent return t
+end
+local function button(parent,text,size,pos,fn,color)
+ local b=Instance.new("TextButton") b.Size=size b.Position=pos b.Font=Enum.Font.GothamBold b.TextSize=13 b.TextColor3=Color3.new(1,1,1) b.BackgroundColor3=color or palette.Blue b.BorderSizePixel=0 b.Text=text b.TextWrapped=true b.Parent=parent corner(b,9) b.Activated:Connect(fn) return b
+end
+local function send(action,args) remote:FireServer(action,args or {}) end
+local function viewport(parent,model,size,pos)
+ local v=Instance.new("ViewportFrame") v.Size=size v.Position=pos v.BackgroundTransparency=1 v.Ambient=Color3.fromRGB(190,190,190) v.LightColor=Color3.fromRGB(255,251,235) v.LightDirection=Vector3.new(-1,-2,-3) v.Parent=parent
+ local world=Instance.new("WorldModel") world.Parent=v model:PivotTo(CFrame.new()) model.Parent=world
+ local cam=Instance.new("Camera") cam.CFrame=CFrame.lookAt(Vector3.new(4,2.9,-7.5),Vector3.new(0,.3,0)) cam.FieldOfView=35 cam.Parent=v v.CurrentCamera=cam return v
+end
+local HUD=require(folder:WaitForChild("HUD"))
+local hud=HUD.New(gui,{Open=function(name) open(name) end,Rush=function() send(data and data.InRush and "LeaveRush" or "JoinRush") end})
+local coins,rate,small=hud.Coins,hud.Rate,hud.Status
+local panel=frame(gui,"MainPanel",UDim2.new(.94,0,.77,0),UDim2.fromScale(.03,.16),palette.Cream) panel.Visible=false
+local limit=Instance.new("UISizeConstraint") limit.MaxSize=Vector2.new(1050,650) limit.Parent=panel
+panel.AnchorPoint=Vector2.new(.5,0) panel.Position=UDim2.fromScale(.5,.16)
+local titleBar=frame(panel,"TitleBar",UDim2.new(1,0,0,47),UDim2.new(),palette.Navy)
+local heading=label(titleBar,"MY PETS",UDim2.new(1,-80,1,0),UDim2.fromOffset(18,0),21,Color3.new(1,1,1)) heading.TextXAlignment=Enum.TextXAlignment.Left
+button(titleBar,"×",UDim2.fromOffset(36,32),UDim2.new(1,-44,0,7),function() panel.Visible=false detailOpen=false end,Color3.fromRGB(207,77,77))
+local subtitle=label(panel,"",UDim2.new(1,-24,0,41),UDim2.fromOffset(12,48),12)
+local content=frame(panel,"Content",UDim2.new(1,-24,1,-106),UDim2.fromOffset(12,94),palette.Cream)
+local list=Instance.new("ScrollingFrame") list.Name="Cards" list.Size=UDim2.fromScale(1,1) list.BackgroundTransparency=1 list.BorderSizePixel=0 list.ScrollBarThickness=5 list.AutomaticCanvasSize=Enum.AutomaticSize.Y list.CanvasSize=UDim2.new() list.Parent=content
+local grid=Instance.new("UIGridLayout") grid.CellPadding=UDim2.fromOffset(8,8) grid.SortOrder=Enum.SortOrder.LayoutOrder grid.Parent=list
+local details=Instance.new("ScrollingFrame") details.Name="PetDetails" details.Size=UDim2.new(0,280,1,0) details.Position=UDim2.new(1,-280,0,0) details.BackgroundColor3=Color3.fromRGB(226,239,238) details.BorderSizePixel=0 details.ScrollBarThickness=4 details.AutomaticCanvasSize=Enum.AutomaticSize.Y details.CanvasSize=UDim2.new() details.Parent=content corner(details) details.Visible=false
+local extras=frame(content,"Controls",UDim2.new(1,0,0,35),UDim2.new(),palette.Cream) extras.Visible=false
+local toast=frame(gui,"Notification",UDim2.new(.84,0,0,48),UDim2.fromScale(.08,.01),palette.Green) toast.Visible=false toast.ZIndex=20
+local toastText=label(toast,"",UDim2.new(1,-20,1,0),UDim2.fromOffset(10,0),14,Color3.new(1,1,1)) toastText.ZIndex=21
+local toastId=0
+local function notify(msg)
+ toastId+=1 local id=toastId toast.Visible=true toastText.Text=msg task.delay(5,function() if toastId==id then toast.Visible=false end end)
+end
+local function clean(parent) for _,v in ipairs(parent:GetChildren()) do if v:IsA("GuiObject") then v:Destroy() end end end
+local function card(color)
+ local f=frame(list,"Card",UDim2.new(),UDim2.new(),color) stroke(f,Color3.new(1,1,1),2) return f
+end
+local function columns(width,min,max) return math.clamp(math.floor((width+8)/(min+8)),1,max or 7) end
+local function configureGrid(width,min,height,max) local n=columns(width,min,max) grid.CellSize=UDim2.fromOffset(math.floor((width-(n-1)*8-8)/n),height) end
+open=function(name)
+ view=name=="Inbox" and "Pets" or name if name=="Inbox" then petTab="All pets" end page=1 detailOpen=false deleteConfirm=false panel.Visible=true render()
+end
+local help=hud.Help local rushButton=hud.Rush
+local reveal=frame(gui,"HatchReveal",UDim2.new(.8,0,.6,0),UDim2.fromScale(.1,.2),palette.Cream) reveal.Visible=false
+local revealLimit=Instance.new("UISizeConstraint") revealLimit.MaxSize=Vector2.new(430,400) revealLimit.Parent=reveal reveal.AnchorPoint=Vector2.new(.5,.5) reveal.Position=UDim2.fromScale(.5,.5)
+local function showHatch(result)
+ pendingHatch=nil clean(reveal) reveal.Visible=true local s=C.Species[result.Species] reveal.BackgroundColor3=s.Color
+ label(reveal,"YOU HATCHED!",UDim2.new(1,0,0,37),UDim2.fromOffset(0,10),22)
+ viewport(reveal,A.Pet(s,nil,C),UDim2.new(1,-30,.58,0),UDim2.fromOffset(15,40))
+ label(reveal,s.Name.." • "..C.Rarities[s.Rarity],UDim2.new(1,-20,0,48),UDim2.new(0,10,1,-103),19)
+ button(reveal,"Add to my adventure",UDim2.new(1,-40,0,38),UDim2.new(0,20,1,-49),function() reveal.Visible=false end,palette.Green)
+end
+local function hatch()
+ if pendingHatch then send("Hatch",pendingHatch) return end
+ pendingHatch={Id=Http:GenerateGUID(false),Time=os.time()} send("Hatch",pendingHatch)
+ task.delay(5,function() pendingHatch=nil end)
+end
+local function selectedPet() if data then for _,pet in ipairs(data.Pets) do if pet.Uid==selected then return pet end end end end
+local function makeDetails()
+ clean(details) local pet=selectedPet()
+ if not pet then label(details,"Choose a pet to inspect its stats and feed it.",UDim2.new(1,-30,0,100),UDim2.fromOffset(15,25),16) return end
+ local s=C.Species[pet.Species]
+ if content.AbsoluteSize.X&lt;650 then button(details,"← Back to pets",UDim2.new(1,-20,0,28),UDim2.fromOffset(10,5),function() detailOpen=false render() end) end
+ label(details,s.Name,UDim2.new(1,-16,0,30),UDim2.fromOffset(8,38),19)
+ viewport(details,A.Pet(s,pet,C),UDim2.new(1,-20,0,125),UDim2.fromOffset(10,68))
+ local stats=C.Rarities[s.Rarity].." • "..pet.Origin.."\n"..pet.Variant.." • "..pet.Size.." • Level "..pet.Level.." / 100\nXP "..math.floor(pet.XP).." / "..(100*pet.Level).."\n"..B.Format(C.Power(pet,data.Tier,B)).." Coins / sec\nMutations: "..(#pet.Mutations&gt;0 and table.concat(pet.Mutations,", ") or "None").."\nMutation factor: "..C.MutationFactor(pet).."×"
+ label(details,stats,UDim2.new(1,-16,0,112),UDim2.fromOffset(8,194),12)
+ button(details,pet.Equipped and "Unequip pet" or "Equip pet",UDim2.new(1,-20,0,30),UDim2.fromOffset(10,310),function() send("Equip",{Uid=pet.Uid}) end,pet.Equipped and palette.Navy or palette.Green)
+ button(details,"‹",UDim2.fromOffset(28,29),UDim2.fromOffset(10,349),function() food=(food-2)%#C.Foods+1 makeDetails() end)
+ label(details,C.Foods[food].Name.." ×"..(data.Food[C.Foods[food].Id] or 0),UDim2.new(1,-84,0,29),UDim2.fromOffset(42,349),12)
+ button(details,"›",UDim2.fromOffset(28,29),UDim2.new(1,-38,0,349),function() food=food%#C.Foods+1 makeDetails() end)
+ button(details,"Feed • +"..C.Foods[food].XP.." XP",UDim2.new(1,-20,0,30),UDim2.fromOffset(10,384),function() send("Feed",{Uid=pet.Uid,Food=C.Foods[food].Id}) end,palette.Green)
+ button(details,deleteConfirm and "Confirm release" or "Release pet",UDim2.new(1,-20,0,26),UDim2.fromOffset(10,423),function() if deleteConfirm then send("Delete",{Uid=pet.Uid}) selected=nil detailOpen=false deleteConfirm=false else deleteConfirm=true end makeDetails() end,Color3.fromRGB(177,91,88))
+end
+render=function()
+ if not data then return end clean(list) clean(extras) details.Visible=false extras.Visible=false list.Visible=true list.Size=UDim2.fromScale(1,1) list.Position=UDim2.new()
+ local width=content.AbsoluteSize.X local height=content.AbsoluteSize.Y local mobile=width&lt;650
+ if view=="Pets" then
+  local equipped=0 for _,p in ipairs(data.Pets) do if p.Equipped then equipped+=1 end end
+  local shown={} for _,pet in ipairs(data.Pets) do if petTab=="All pets" or pet.Equipped then table.insert(shown,pet) end end
+  heading.Text="MY PETS • "..#data.Pets.." / 200" subtitle.Text=equipped.." / 3 equipped • Tap a pet to inspect • Page "..page.." / "..math.max(1,math.ceil(#shown/24))
+  extras.Visible=true
+  for i,tab in ipairs({"Equipped","All pets"}) do button(extras,tab,UDim2.fromOffset(105,29),UDim2.fromOffset((i-1)*112,0),function() petTab=tab page=1 detailOpen=false render() end,petTab==tab and palette.Green or palette.Navy) end
+  button(extras,"Equip best",UDim2.fromOffset(100,29),UDim2.fromOffset(224,0),function() send("EquipBest") end,palette.Green)
+  button(extras,"‹ Previous",UDim2.fromOffset(96,29),UDim2.fromOffset(0,34),function() page=math.max(1,page-1) render() end)
+  button(extras,"Next ›",UDim2.fromOffset(80,29),UDim2.fromOffset(104,34),function() page=math.min(math.max(1,math.ceil(#shown/24)),page+1) render() end)
+  local gridWidth=mobile and width or width-290 list.Size=UDim2.new(0,gridWidth,1,-76) list.Position=UDim2.fromOffset(0,76)
+  configureGrid(gridWidth,114,164,5)
+  if not mobile or detailOpen then details.Visible=true details.Position=mobile and UDim2.fromOffset(0,0) or UDim2.new(1,-280,0,0) details.Size=mobile and UDim2.fromScale(1,1) or UDim2.new(0,280,1,0) if mobile then list.Visible=false extras.Visible=false end makeDetails() end
+  for i=(page-1)*24+1,math.min(page*24,#shown) do local pet=shown[i] local s=C.Species[pet.Species] local f=card(s.Color)
+   viewport(f,A.Pet(s,pet,C),UDim2.new(1,0,0,91),UDim2.new())
+   label(f,s.Name,UDim2.new(1,-6,0,31),UDim2.fromOffset(3,88),12)
+   label(f,C.Rarities[s.Rarity].." • Lv "..pet.Level,UDim2.new(1,-4,0,18),UDim2.fromOffset(2,119),10)
+   button(f,pet.Equipped and "✓ Equipped" or "Inspect",UDim2.new(1,-10,0,23),UDim2.fromOffset(5,137),function() selected=pet.Uid detailOpen=true deleteConfirm=false render() end,pet.Equipped and palette.Green or palette.Navy)
+  end
+  if petTab=="All pets" and page==1 then
+   for key,reward in pairs(data.Inbox or {}) do
+    local rewardKey=key local f=card(Color3.fromRGB(255,228,154))
+    label(f,"Egg Rush reward",UDim2.new(1,-12,0,80),UDim2.fromOffset(6,10),15)
+    button(f,"Open egg",UDim2.new(1,-12,0,32),UDim2.fromOffset(6,110),function() send("Reward",{Key=rewardKey}) end,palette.Green)
+   end
+  end
+ elseif view=="Index" then
+  heading.Text="PET INDEX • "..biome:upper() local count=0 for _,s in ipairs(C.Species) do if data.Discovered[s.Id] then count+=1 end end
+  subtitle.Text=biome=="Forest" and count.." / 30 discovered • Rarity collections unlock permanent cosmetic bats" or biome=="EXCLUSIVE" and "Separate special collection • excluded from ordinary eggs" or "New biome collection • Coming Soon"
+  extras.Visible=true local tabs={"Forest","River","Desert","Ice","Volcanic","EXCLUSIVE"}
+  for i,name in ipairs(tabs) do button(extras,name,UDim2.new(1/6,-4,0,29),UDim2.new((i-1)/6,0,0,0),function() biome=name render() end,biome==name and palette.Green or palette.Blue) end
+  list.Position=UDim2.fromOffset(0,39) list.Size=UDim2.new(1,0,1,-39) configureGrid(width,105,139,9)
+  if biome=="Forest" then for _,s in ipairs(C.Species) do local known=data.Discovered[s.Id] local f=card(s.Color)
+   local model=A.Pet(s,nil,C)
+   if not known then for _,p in ipairs(model:GetDescendants()) do if p:IsA("BasePart") then p.Color=Color3.fromRGB(39,56,70) p.Material=Enum.Material.SmoothPlastic end end end
+   viewport(f,model,UDim2.new(1,0,0,82),UDim2.new())
+   label(f,known and s.Name or "Locked discovery",UDim2.new(1,-6,0,31),UDim2.fromOffset(3,80),11)
+   label(f,C.Rarities[s.Rarity],UDim2.new(1,-4,0,19),UDim2.fromOffset(2,114),11)
+  end else local f=card(palette.Navy) label(f,biome=="EXCLUSIVE" and "EXCLUSIVE\nSpecial events &amp; premium content\nComing Soon" or biome.."\nCOMING SOON",UDim2.fromScale(1,1),UDim2.new(),14,Color3.new(1,1,1)) end
+ elseif view=="Food" then
+  heading.Text="FOOD &amp; FEEDING" subtitle.Text="Buy food with Coins, then feed a selected pet in My Pets • Food stays in your inventory"
+  configureGrid(width,170,215,4)
+  for i,f in ipairs(C.Foods) do local tile=card(Color3.fromRGB(225,237,210))
+   label(tile,({"●","◆","✦","★"})[i],UDim2.new(1,0,0,60),UDim2.fromOffset(0,9),42,C.Colors[i+1])
+   label(tile,f.Name.."\n+"..f.XP.." XP • Owned: "..(data.Food[f.Id] or 0),UDim2.new(1,-16,0,65),UDim2.fromOffset(8,74),16)
+   button(tile,"Buy • "..B.Format(f.Cost).." Coins",UDim2.new(1,-20,0,42),UDim2.fromOffset(10,158),function() send("BuyFood",{Food=f.Id}) end,palette.Green)
+  end
+ elseif view=="Bats" then
+  heading.Text="FOREST BAT SKINS" subtitle.Text="Permanent Index rewards • Identical movement, range, cooldown and knockback"
+  configureGrid(width,130,213,7)
+  for r=0,9 do local owned=r==0 or data.Bats[tostring(r)] local color=r==0 and Color3.fromRGB(190,157,118) or C.Colors[r] local tile=card(color)
+   viewport(tile,A.Bat(math.max(1,r),C,false),UDim2.new(1,0,0,125),UDim2.new())
+   label(tile,r==0 and "Starter Bat" or "Forest "..C.Rarities[r],UDim2.new(1,-8,0,35),UDim2.fromOffset(4,123),12)
+   button(tile,owned and (data.Skin==r and "✓ Selected" or "Select skin") or "Complete Index",UDim2.new(1,-12,0,33),UDim2.fromOffset(6,170),function() if owned then send("Skin",{Rarity=r}) else notify("Collect every Forest "..C.Rarities[r].." species to unlock this bat.") end end,owned and palette.Green or palette.Navy)
+  end
+ elseif view=="Egg" then
+  heading.Text="FOREST EGG • 250K COINS" subtitle.Text=#data.Pets.." / 200 pets • All giant egg pedestals showcase this shared Forest collection"
+  extras.Visible=true button(extras,"Hatch • 250K Coins",UDim2.new(.48,-4,0,31),UDim2.new(),hatch,palette.Green)
+  button(extras,"View Forest Index",UDim2.new(.48,-4,0,31),UDim2.new(.5,0,0,0),function() biome="Forest" open("Index") end)
+  list.Position=UDim2.fromOffset(0,40) list.Size=UDim2.new(1,0,1,-40) configureGrid(width,120,150,7)
+  local counts={} for _,s in ipairs(C.Species) do counts[s.Rarity]=(counts[s.Rarity] or 0)+1 end
+  for _,s in ipairs(C.Species) do local f=card(s.Color) viewport(f,A.Pet(s,nil,C),UDim2.new(1,0,0,82),UDim2.new())
+   label(f,s.Name,UDim2.new(1,-6,0,29),UDim2.fromOffset(3,80),11)
+   label(f,string.format("%.4g%%",C.Weights[s.Rarity]/counts[s.Rarity]).." • "..C.Rarities[s.Rarity],UDim2.new(1,-4,0,31),UDim2.fromOffset(2,111),11)
+  end
+ elseif view=="Settings" then
+  heading.Text="SETTINGS" subtitle.Text="Choose comfortable effects and manage saved progress"
+  configureGrid(width,220,180,3)
+  local tile=card(Color3.fromRGB(219,232,239))
+  label(tile,"Visual Effects\n"..(reduced and "Reduced" or "Full").."\nLower effects reduce ambient particles and color animation.",UDim2.new(1,-20,0,112),UDim2.fromOffset(10,7),15)
+  button(tile,reduced and "Enable full effects" or "Reduce effects",UDim2.new(1,-20,0,40),UDim2.fromOffset(10,128),function() reduced=not reduced render() end)
+  local save=card(Color3.fromRGB(222,239,212))
+  label(save,data.Mode.."\n"..(data.Mode=="Studio session" and "Studio progress stays in this running server." or "Account progress saves automatically."),UDim2.new(1,-20,0,112),UDim2.fromOffset(10,7),15)
+  button(save,"Save progress",UDim2.new(1,-20,0,40),UDim2.fromOffset(10,128),function() send("Save") end,palette.Green)
+  if Run:IsStudio() then local practice=card(Color3.fromRGB(233,215,248)) label(practice,"Studio Practice\nTest the Egg Rush arena with equal stats.",UDim2.new(1,-20,0,112),UDim2.fromOffset(10,7),15) button(practice,"Start practice round",UDim2.new(1,-20,0,40),UDim2.fromOffset(10,128),function() send("Practice") panel.Visible=false end) end
+ elseif view=="Shop" then
+  heading.Text="FOREST SHOP" subtitle.Text="Your permanent farming multiplier: "..2^data.Tier.."× • Paid upgrades never affect Egg Rush"
+  configureGrid(width,190,210,5)
+  for i,u in ipairs(C.Upgrades) do local meta=data.Shop[i] or {} local owned=i&lt;=data.Tier local available=meta.Available and i==data.Tier+1 local f=card(owned and Color3.fromRGB(169,217,176) or Color3.fromRGB(220,234,244))
+   label(f,u.Multiplier.."×",UDim2.new(1,0,0,55),UDim2.fromOffset(0,12),35,palette.Blue)
+   label(f,"Permanent farming\n"..(meta.Price and "R$ "..meta.Price or "Target R$ "..u.TargetPrice.." • not on sale"),UDim2.new(1,-16,0,65),UDim2.fromOffset(8,70),14)
+   button(f,owned and "✓ Owned" or available and "Buy next upgrade" or "Coming Soon",UDim2.new(1,-20,0,39),UDim2.fromOffset(10,157),function() if available then send("BuyUpgrade",{Tier=i}) else notify(owned and "You already own this tier permanently." or "Roblox products must be configured before this tier can be sold.") end end,owned and palette.Green or palette.Navy)
+  end
+  for _,b in ipairs(C.Boosters) do local f=card(Color3.fromRGB(222,207,241))
+   label(f,b.Name.."\n+"..math.floor(b.Bonus*100).." percentage points\n5 minutes • Owned "..(data.Boosters[b.Id] or 0),UDim2.new(1,-14,0,105),UDim2.fromOffset(7,12),16)
+   label(f,"Direct weather hit required. Timer continues offline. Purchases Coming Soon.",UDim2.new(1,-12,0,42),UDim2.fromOffset(6,113),11)
+   button(f,"Activate owned booster",UDim2.new(1,-20,0,38),UDim2.fromOffset(10,163),function() send("Boost",{Booster=b.Id}) end)
+  end
+  for _,info in ipairs({"EXCLUSIVE PETS\nPremium collection\nComing Soon","HUGE PETS\nAcquisition pending\nComing Soon","FUTURE UPGRADES\nThrough 1,048,576×\nComing Soon"}) do local f=card(palette.Navy) label(f,info,UDim2.fromScale(1,1),UDim2.new(),18,Color3.new(1,1,1)) end
+ else
+  heading.Text="YOUR LITTLE ADVENTURE" subtitle.Text=data.Mode.." • "..(data.Mode=="Studio session" and "Local playtest progress stays in this server" or "Progress is saved to your account")
+  grid.CellSize=UDim2.new(1,-8,0,420)
+  local f=card(Color3.fromRGB(225,237,223))
+  label(f,"FARM • Stand within 28 studs of coin piles or treasure chests. Equipped pets work automatically.\n\nCOLLECT • Visit the giant clover egg at the plaza to see every species and its exact odds. Hatch for 250K Coins. Equip your best three pets.\n\nGROW • Buy Apples, Fish, Golden Fruit or Mystic Treats, then feed a pet. XP also comes from active farming.\n\nEXPLORE • Unlock the five Forest sectors in order. The River gateway marks a future update.\n\nEGG RUSH • Join during registration. After a five-second countdown, race to one of ten boxes. Hold its prompt for 0.75 seconds. Equip your bat and tap to knock opponents back. You can claim one egg per round; open it from Inbox.\n\nWEATHER • Six random events can directly strike equipped pets. Only a successful direct-hit roll grants a mutation. Boosters improve that roll, not event frequency or PvP.\n\nINDEX • Discover every pet of a rarity to unlock a permanent cosmetic bat. Divine access and weekly EXCLUSIVE summons remain Coming Soon.",UDim2.new(1,-24,1,-18),UDim2.fromOffset(12,9),13)
+  local save=card(palette.Navy) button(save,"Save progress",UDim2.new(1,-24,0,43),UDim2.fromOffset(12,12),function() send("Save") end)
+  if Run:IsStudio() then button(save,"Start practice Egg Rush",UDim2.new(1,-24,0,43),UDim2.fromOffset(12,67),function() send("Practice") panel.Visible=false end,palette.Green) end
+ end
+end
+panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() if panel.Visible then task.defer(render) end end)
+remote.OnClientEvent:Connect(function(action,value)
+ if action=="State" then
+  local previous=data data=value coins.Text=B.Format(data.Coins) rate.Text=B.Format(data.Rate).." Coins / sec"
+  small.Text=C.Sectors[data.CurrentSector].." • "..data.Weather.." • "..2^data.Tier.."× • "..data.Mode
+  if data.SaveError then small.Text="Saving unavailable — existing progress protected. Retry shortly." end
+  rushButton.Visible=data.Rush=="Registration" or data.InRush rushButton.Text=data.InRush and "Leave Rush" or "Join Rush"
+  help.Text=data.InRush and (data.Rush.." • "..data.RushTime.."s • "..data.BoxesLeft.." boxes • Hold "..math.floor(data.ClaimProgress*100).."%") or "Egg Rush in "..string.format("%02d:%02d",math.floor(data.RushTime/60),data.RushTime%60).." • Stand near treasure to farm"
+  if panel.Visible and (not previous or previous.Revision~=data.Revision) then render() end
+  for sector,gate in pairs((function() local out={} local world=workspace:FindFirstChild("MyLittlePets") if world then for s=2,5 do local zone=world:FindFirstChild("Sector"..s) local part=zone and zone:FindFirstChild("Gate"..s) if part then out[s]=part end end end return out end)()) do gate.LocalTransparencyModifier=sector&lt;=data.Sector and 1 or 0 local prompt=gate:FindFirstChildOfClass("ProximityPrompt") if prompt then prompt.Enabled=sector&gt;data.Sector end end
+ elseif action=="Toast" then pendingHatch=nil notify(value)
+ elseif action=="Open" then if value=="Index" then biome="Forest" end open(value)
+ elseif action=="Hatch" then showHatch(value)
+ elseif action=="PurchaseClosed" then notify(value and "Checking permanent ownership…" or "Purchase closed. Existing upgrades remain owned.")
+ elseif action=="Strike" then
+  local world=workspace:FindFirstChild("MyLittlePets") local pets=world and world:FindFirstChild("Pets_"..value.Owner)
+  if pets then for _,model in ipairs(pets:GetChildren()) do if model:GetAttribute("Uid")==value.Uid and model.PrimaryPart then
+   local pos=model.PrimaryPart.Position local strike=A.Part(workspace,"WeatherStrike",Vector3.new(.18,16,.18),pos+Vector3.new(0,8,0),value.Color) strike.Material=Enum.Material.Neon
+   if not reduced then local flash=A.Part(workspace,"StrikeRing",Vector3.new(3,.12,3),pos-Vector3.new(0,1,0),value.Color,Enum.PartType.Ball) flash.Transparency=.6 game:GetService("Debris"):AddItem(flash,.6) end
+   game:GetService("Debris"):AddItem(strike,.35)
+  end end end
+ end
+end)
+local poses={} local weatherParticles={} local particleAt=0
+Run.RenderStepped:Connect(function(dt)
+ local world=workspace:FindFirstChild("MyLittlePets") if not world then return end
+ for _,folder in ipairs(world:GetChildren()) do if folder:IsA("Folder") and folder.Name:sub(1,5)=="Pets_" then for _,model in ipairs(folder:GetChildren()) do
+  if model:IsA("Model") and model.PrimaryPart then
+   local owner=Players:GetPlayerByUserId(model:GetAttribute("Owner") or 0) local root=owner and owner.Character and owner.Character:FindFirstChild("HumanoidRootPart")
+   if root then
+    local slot=model:GetAttribute("Slot") or 1 local target=model:GetAttribute("Target") local working=model:GetAttribute("Working") and typeof(target)=="Vector3"
+    local pos=working and target+Vector3.new((slot-2)*2.7,2.1,4) or (root.CFrame*CFrame.new((slot-2)*3.2,0,5)).Position
+    pos=Vector3.new(pos.X,working and pos.Y or root.Position.Y-1.2,pos.Z)+Vector3.new(0,math.sin(os.clock()*3+slot)*.18,0)
+    local look=working and Vector3.new(target.X,pos.Y,target.Z) or pos+root.CFrame.LookVector
+    local cf=CFrame.lookAt(pos,look) if model:GetAttribute("InRush") then cf=CFrame.new(0,-100,0) end
+    model:PivotTo(model:GetPivot():Lerp(cf,math.min(1,dt*8)))
+    if not reduced then for _,p in ipairs(model:GetChildren()) do if p:IsA("BasePart") and p:GetAttribute("Rainbow") then p.Color=Color3.fromHSV((os.clock()*.12+slot*.15)%1,.65,1) end end end
+   end
+  end
+ end end end
+ if data and data.Weather~="Sunny" and not reduced and os.clock()&gt;particleAt then
+  particleAt=os.clock()+.15 local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+  if root then local col=Color3.fromRGB(160,218,244) for _,w in ipairs(C.Weather) do if w.Name==data.Weather then col=w.Color end end
+   local pos=root.Position+Vector3.new(math.random(-14,14),12,math.random(-14,14)) local snow=data.Weather=="Snowstorm"
+   local p=A.Part(workspace,"AmbientWeather",snow and Vector3.new(.15,.15,.15) or Vector3.new(.07,1.2,.07),pos,col) p.Transparency=.3
+   Tween:Create(p,TweenInfo.new(1.2),{Position=pos-Vector3.new(0,20,0),Transparency=1}):Play() game:GetService("Debris"):AddItem(p,1.3)
+  end
+ end
+end)
+local function cameraStart(char)
+ local h=char:WaitForChild("Humanoid",10) if not h then return end task.wait(.5)
+ local cam=workspace.CurrentCamera if cam then cam.CameraType=Enum.CameraType.Scriptable cam.CFrame=CFrame.lookAt(Vector3.new(23,23,-60),Vector3.new(0,5,-145)) task.wait(.2) cam.CameraSubject=h cam.CameraType=Enum.CameraType.Custom end
+end
+player.CharacterAdded:Connect(cameraStart) if player.Character then task.spawn(cameraStart,player.Character) end
+send("Sync") task.delay(2,function() send("Sync") notify("Welcome to My Little Pets! Your Forest Fox is ready to farm.") end)
+
+
+</ProtectedString>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="Lighting">
+    <Properties>
+      <string name="Name">Lighting</string>
+    </Properties>
+  </Item>
+</roblox>
