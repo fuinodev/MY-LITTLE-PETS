@@ -2,7 +2,7 @@
 
 Open `game/build/MyLittlePets.rbxlx` in Roblox Studio and press Play. The game creates its world at startup. The connected Studio place also has the current scripts installed.
 
-The HUD follows the supplied screenshot: outlined colorful icon buttons, three top status bars, right-side shortcuts, and Boosts. Buttons open Pets, Shop, Index, Food, Bats, Inbox, Guide, and Settings. Status bars show actual coins, farming rate, and pet count.
+The HUD follows the supplied screenshot: outlined colorful icon buttons, a top coin counter, right-side shortcuts, and Boosts. Image buttons open Pets, Shop, Index, Food, Bats, Guide, and Settings. Farming rate is plain text above Boosts. Pets has Equipped and All pets tabs, with Egg Rush rewards inside All pets; there is no Inbox button or top pet counter.
 
 Implemented: five Forest sectors, 30 collectible species, exact integer balances, shared treasure farming, hatching, pet equipment and food, collection rewards, ten-box Egg Rush with durable inbox claims, six weather mutations, cloud profile/session handling, leaderboard adapters, and verified-purchase handlers. Cube pets, eggs, bats, treasure, shop, arena and UI icons are editable native Roblox objects built from code, informed by the supplied artwork.
 

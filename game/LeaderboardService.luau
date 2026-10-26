@@ -1,6 +1,6 @@
 local L={Cache={},Refreshing=false,Server={},Global={},GlobalStatus="Loading global rankings",Updated=0}
-local DS=game:GetService("DataStoreService") local ordered=DS:GetOrderedDataStore("MLP_RateRank_v2") local summaries=DS:GetDataStore("MLP_RateSummary_v2")
-function L.Init(G) L.G=G end
+local DS=game:GetService("DataStoreService") local ordered local summaries
+function L.Init(G) L.G=G if not game:GetService("RunService"):IsStudio() or G.C.StudioUseDataStore then ordered=DS:GetOrderedDataStore("MLP_RateRank_v2") summaries=DS:GetDataStore("MLP_RateSummary_v2") end end
 local function compare(a,b) local c=L.G.B.Cmp(a.Rate,b.Rate) return c==0 and a.UserId<b.UserId or c>0 end
 local function text(title,rows,status)
  local lines={title,"#  PLAYER     COINS/SEC     COINS"}

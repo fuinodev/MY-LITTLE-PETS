@@ -9,19 +9,19 @@ local function shape(parent,x,y,w,h,c,round,rot)
  local f=Instance.new("Frame") f.Size=UDim2.fromScale(w,h) f.Position=UDim2.fromScale(x,y) f.BackgroundColor3=c f.BorderSizePixel=0 f.Rotation=rot or 0 f.Parent=parent if round then radius(f,round) end return f
 end
 local function text(parent,txt,size,pos,ts,color)
- local t=Instance.new("TextLabel") t.Size=size t.Position=pos t.BackgroundTransparency=1 t.Text=txt t.TextColor3=color or Color3.new(1,1,1) t.Font=Enum.Font.GothamBlack t.TextSize=ts or 15 t.TextStrokeColor3=dark t.TextStrokeTransparency=0 t.Parent=parent return t
+ local t=Instance.new("TextLabel") t.Size=size t.Position=pos t.BackgroundTransparency=1 t.Text=txt t.TextColor3=color or Color3.new(1,1,1) t.Font=Enum.Font.GothamBold t.TextSize=ts or 15 t.TextStrokeColor3=dark t.TextStrokeTransparency=0 t.Parent=parent return t
 end
 local function gradient(o,col)
  local g=Instance.new("UIGradient") g.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,col:Lerp(Color3.new(1,1,1),.42)),ColorSequenceKeypoint.new(.5,col),ColorSequenceKeypoint.new(1,col:Lerp(Color3.new(0,0,0),.2))}) g.Rotation=90 g.Parent=o
 end
 -- Set after uploading assets/menu-icons.png to the owning Roblox account.
-H.Atlas = ""
+H.Atlas = "rbxassetid://140124331075599"
 local cells={Pets=0,Shop=1,Index=2,Food=3,Bats=4,Guide=5,Settings=6,Boosts=7,Coins=8}
 function H.Icon(parent,name)
  local icon=Instance.new("ImageLabel") icon.Name=name.."Image" icon.BackgroundTransparency=1
  icon.Size=UDim2.fromScale(.92,.92) icon.Position=UDim2.fromScale(.04,.04)
  icon.Image=H.Atlas icon.ScaleType=Enum.ScaleType.Fit
- local cell=cells[name] or 5 local step=1280/3
+ local cell=cells[name] or 5 local step=1024/3
  icon.ImageRectOffset=Vector2.new(math.floor(cell%3*step),math.floor(math.floor(cell/3)*step))
  icon.ImageRectSize=Vector2.new(math.floor(step),math.floor(step)) icon.Parent=parent
  return icon
@@ -36,40 +36,79 @@ local function tile(parent,name,pos,size,callback,color)
  b.MouseLeave:Connect(function() tooltip.Visible=false Tween:Create(b,TweenInfo.new(.1),{Rotation=0}):Play() end)
  b.Activated:Connect(function() callback(name) end) return b
 end
-function H.New(gui,callbacks)
- local out={}
- local bar=Instance.new("Frame") bar.Name="SimulatorToolbar" bar.Size=UDim2.fromOffset(426,73) bar.AnchorPoint=Vector2.new(.5,1) bar.Position=UDim2.new(.5,0,1,-7) bar.BackgroundTransparency=1 bar.Parent=gui
+function H.New(screen,callbacks)
+ local gui=Instance.new("Frame") gui.Name="GameHUD" gui.Size=UDim2.fromScale(1,1) gui.BackgroundTransparency=1 gui.Parent=screen
+ local out={Root=gui}
+ local bar=Instance.new("Frame") bar.Name="SimulatorToolbar" bar.Size=UDim2.fromOffset(124,192) bar.AnchorPoint=Vector2.new(1,1) bar.Position=UDim2.new(1,-8,1,-78) bar.BackgroundTransparency=1 bar.Parent=gui
  local barScale=Instance.new("UIScale") barScale.Parent=bar
- for i,name in ipairs({"Pets","Shop","Index","Food","Bats","Guide"}) do local b=tile(bar,name,UDim2.fromOffset(12+(i-1)*69,5),54,function(n) callbacks.Open(n) end) text(b,name,UDim2.new(1.4,0,0,15),UDim2.new(-.2,0,1,5),10) end
- local top=Instance.new("Frame") top.Name="CurrencyPills" top.Size=UDim2.fromOffset(154,74) top.AnchorPoint=Vector2.new(.5,0) top.Position=UDim2.new(.5,0,0,5) top.BackgroundTransparency=1 top.Parent=gui
+ for i,name in ipairs({"Pets","Shop","Index","Food","Bats","Guide","Settings"}) do local b=tile(bar,name,UDim2.fromOffset(12+(i-1)*69,5),54,function(n) callbacks.Open(n) end) text(b,name,UDim2.new(1.4,0,0,15),UDim2.new(-.2,0,1,5),10) end
+ local top=Instance.new("Frame") top.Name="CurrencyPills" top.Size=UDim2.fromOffset(154,31) top.AnchorPoint=Vector2.new(0,1) top.Position=UDim2.new(0,8,1,-8) top.BackgroundTransparency=1 top.Parent=gui
  local topScale=Instance.new("UIScale") topScale.Parent=top
  local function pill(name,index,color)
   local f=shape(top,0,0,1,1,color,11) f.Size=UDim2.fromOffset(154,31) f.Position=UDim2.fromOffset((index-1)*169,0) outline(f,2) gradient(f,color)
   local holder=shape(f,0,0,.23,1,color) holder.BackgroundTransparency=1 H.Icon(holder,name)
   local value=text(f,"0",UDim2.new(.7,0,1,0),UDim2.new(.27,0,0,0),18) value.TextXAlignment=Enum.TextXAlignment.Right
-  local title=text(f,name=="Rate" and "Coins / sec" or name,UDim2.new(1,0,0,14),UDim2.new(0,0,1,1),10)
+  local title=text(f,name=="Rate" and "Coins / sec" or name,UDim2.new(1,0,0,14),UDim2.new(0,0,0,-18),10)
+  title.Visible=false
   return value
  end
  out.Coins=pill("Coins",1,Color3.fromRGB(255,199,45))
  out.Rate=text(gui,"0 Coins / sec",UDim2.fromOffset(170,24),UDim2.new(0,12,1,-115),15)
  out.Rate.Name="FarmingRate" out.Rate.TextXAlignment=Enum.TextXAlignment.Left
- local switch=Instance.new("TextButton") switch.Name="ForestSwitch" switch.Size=UDim2.fromOffset(100,23) switch.Position=UDim2.fromOffset(27,49) switch.Text="FOREST" switch.TextSize=12 switch.Font=Enum.Font.GothamBold switch.TextColor3=Color3.new(1,1,1) switch.BackgroundColor3=Color3.fromRGB(67,197,194) switch.Parent=top radius(switch,6) outline(switch,1.5) gradient(switch,switch.BackgroundColor3) switch.Activated:Connect(function() callbacks.Open("Index") end)
- local side=Instance.new("Frame") side.Name="UtilityButtons" side.Size=UDim2.fromOffset(52,236) side.AnchorPoint=Vector2.new(1,.5) side.Position=UDim2.new(1,-12,.5,0) side.BackgroundTransparency=1 side.Parent=gui
- for i,name in ipairs({"Shop","Pets","Index","Settings"}) do tile(side,name,UDim2.fromOffset(3,(i-1)*59),44,function(n) callbacks.Open(n) end,i==1 and Color3.fromRGB(255,109,122) or colors[name]) end
- local status=text(gui,"MY LITTLE PETS • FOREST",UDim2.new(.8,0,0,19),UDim2.new(.1,0,0,82),11) out.Status=status
- out.Help=text(gui,"Stand near treasure to farm",UDim2.new(.8,0,0,21),UDim2.new(.1,0,1,-105),12)
- local rush=Instance.new("TextButton") rush.Size=UDim2.fromOffset(122,31) rush.Position=UDim2.new(0,12,.5,-15) rush.Text="JOIN EGG RUSH" rush.TextColor3=Color3.new(1,1,1) rush.Font=Enum.Font.GothamBlack rush.TextSize=12 rush.BackgroundColor3=Color3.fromRGB(100,215,71) rush.Parent=gui radius(rush,8) outline(rush,2) gradient(rush,rush.BackgroundColor3) rush.Visible=false rush.Activated:Connect(callbacks.Rush) out.Rush=rush
- local boost=tile(gui,"Boosts",UDim2.new(0,12,1,-85),54,function() callbacks.Open("Shop") end,Color3.fromRGB(79,220,58))
+ -- Forest artwork is reserved for the completion reward, not the location HUD.
+ local location=text(gui,"Forest",UDim2.fromOffset(140,24),UDim2.new(.5,0,0,2),18)
+ location.Name="LocationLabel" location.AnchorPoint=Vector2.new(.5,0)
+ location.TextStrokeTransparency=.4 location.Active=false
+ local status=text(gui,"",UDim2.new(.7,0,0,34),UDim2.new(.15,0,0,64),14) status.Visible=false status.TextWrapped=true out.Status=status
+ out.Help=text(gui,"EGG RUSH\n20:00",UDim2.fromOffset(210,64),UDim2.new(1,-12,1,-8),16)
+ out.Help.Name="EggRushCountdown" out.Help.AnchorPoint=Vector2.new(1,1)
+ out.Help.TextXAlignment=Enum.TextXAlignment.Right out.Help.TextYAlignment=Enum.TextYAlignment.Bottom
+ out.Help.TextWrapped=true out.Help.TextStrokeTransparency=.35
+ local rush=Instance.new("TextButton") rush.Size=UDim2.fromOffset(122,31) rush.Position=UDim2.new(0,12,.5,55) rush.Text="JOIN EGG RUSH" rush.TextColor3=Color3.new(1,1,1) rush.Font=Enum.Font.GothamBold rush.TextSize=12 rush.BackgroundColor3=Color3.fromRGB(100,215,71) rush.Parent=gui radius(rush,8) outline(rush,2) gradient(rush,rush.BackgroundColor3) rush.Visible=false rush.Activated:Connect(callbacks.Rush) out.Rush=rush
+ local boost=tile(gui,"Boosts",UDim2.new(0,12,.5,-27),54,function() callbacks.Open("Boosts") end,Color3.fromRGB(79,220,58))
  text(boost,"Boosts",UDim2.new(1.5,0,0,17),UDim2.new(-.25,0,1,3),11)
  local function resize()
-  local cam=workspace.CurrentCamera if not cam then return end local w=cam.ViewportSize.X
-  barScale.Scale=math.min(1,(w-26)/426) topScale.Scale=1
-  local small=w<650
-  bar.Position=UDim2.new(.5,0,1,-7)
-  boost.Position=UDim2.new(0,12,1,small and -170 or -85)
-  out.Rate.Position=boost.Position+UDim2.fromOffset(0,-30)
-  side.Position=UDim2.new(1,-8,.5,0)
+  local w,h=gui.AbsoluteSize.X,gui.AbsoluteSize.Y if w<1 or h<1 then return end
+  local margin=8 local size=h<500 and 44 or 48 local gap=8 local caption=16
+  local pitch=size+caption+gap
+  local touch=game:GetService("UserInputService").TouchEnabled
+  local touchPortrait=touch and w<h
+  local footer=touchPortrait and 180 or touch and 104 or 68
+  local header=size+margin*2
+  local maxRows=math.max(1,math.floor((h-header-footer)/pitch))
+  local cols=math.clamp(math.ceil(7/maxRows),1,3) local rows=math.ceil(7/cols)
+  barScale.Scale=1 topScale.Scale=1
+  bar.Size=UDim2.fromOffset(cols*size+(cols-1)*gap,rows*pitch-gap)
+  bar.AnchorPoint=Vector2.new(1,touch and .5 or 1)
+  bar.Position=touch and UDim2.new(1,-margin,.5,0) or UDim2.new(1,-margin,1,-footer)
+  local function place(parent,name,pos)
+   local button=parent[name.."Button"] button.Size=UDim2.fromOffset(size,size) button.Position=pos
+   local shadow=parent[name.."Shadow"] shadow.Size=button.Size shadow.Position=pos+UDim2.fromOffset(0,4)
+  end
+  for i,name in ipairs({"Pets","Shop","Index","Food","Bats","Guide","Settings"}) do
+   place(bar,name,UDim2.fromOffset(((i-1)%cols)*(size+gap),math.floor((i-1)/cols)*pitch))
+  end
+  place(gui,"Boosts",UDim2.new(0,margin,.5,-size/2))
+  rush.Position=UDim2.new(0,margin,.5,size/2+caption+gap) rush.Size=UDim2.fromOffset(122,44)
+  top.Position=UDim2.new(0,margin,1,-margin)
+  out.Rate.Position=top.Position+UDim2.fromOffset(0,-55)
+  out.Rate.Size=UDim2.fromOffset(math.min(170,w*.46),24) out.Rate.TextSize=w<400 and 13 or 15
+  out.Help.Size=UDim2.fromOffset(math.min(210,w*.46),64)
+  out.Help.Position=UDim2.new(1,-margin,1,-margin) out.Help.TextSize=w<400 and 13 or 16
+  if touch then
+   if touchPortrait or w<600 then
+    top.Position=UDim2.new(0,margin,1,-116)
+    out.Help.Position=UDim2.new(1,-margin,1,-116)
+   else
+    top.Position=UDim2.new(0,128,1,-margin)
+    out.Help.Position=UDim2.new(1,-128,1,-margin)
+    out.Help.Size=UDim2.fromOffset(math.min(170,w-444),64) out.Help.TextSize=13
+   end
+   out.Rate.Position=top.Position+UDim2.fromOffset(0,-55)
+  end
+  location.Position=UDim2.new(.5,0,0,2) location.TextSize=18
  end
+ gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(resize) task.defer(resize) task.delay(.5,resize)
  resize() if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end return out
 end
 return H

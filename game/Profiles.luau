@@ -2,7 +2,7 @@
 local D={}
 local DS=game:GetService("DataStoreService") local Http=game:GetService("HttpService") local Run=game:GetService("RunService")
 local C=require(game.ReplicatedStorage.MyLittlePets.Config) local B=require(game.ReplicatedStorage.MyLittlePets.BigNum)
-local store=DS:GetDataStore(C.DataStoreName) local memory={} local sessions={}
+local store if not Run:IsStudio() or C.StudioUseDataStore then store=DS:GetDataStore(C.DataStoreName) end local memory={} local sessions={}
 local token=(game.JobId~="" and game.JobId or "studio")..":"..Http:GenerateGUID(false)
 local function copy(v) if type(v)~="table" then return v end local t={} for k,x in pairs(v) do t[k]=copy(x) end return t end D.Copy=copy
 local function retry(fn)

@@ -1,7 +1,7 @@
 local Players=game:GetService("Players") local RS=game:GetService("ReplicatedStorage") local Run=game:GetService("RunService") local Http=game:GetService("HttpService") local Tween=game:GetService("TweenService")
 local player=Players.LocalPlayer local folder=RS:WaitForChild("MyLittlePets")
 local C=require(folder:WaitForChild("Config")) local B=require(folder:WaitForChild("BigNum")) local A=require(folder:WaitForChild("Assets")) local remote=folder:WaitForChild("Action")
-local gui=Instance.new("ScreenGui") gui.Name="MyLittlePetsUI" gui.ResetOnSpawn=false gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling gui.Parent=player:WaitForChild("PlayerGui")
+local gui=Instance.new("ScreenGui") gui.Name="MyLittlePetsUI" gui.ScreenInsets=Enum.ScreenInsets.DeviceSafeInsets gui.ResetOnSpawn=false gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling gui.Parent=player:WaitForChild("PlayerGui")
 local palette={Ink=Color3.fromRGB(30,53,69),Blue=Color3.fromRGB(25,109,160),Navy=Color3.fromRGB(22,67,92),Cream=Color3.fromRGB(246,250,238),Green=Color3.fromRGB(44,143,92),Gold=Color3.fromRGB(255,205,66)}
 local data local view="Pets" local biome="Forest" local selected local food=1 local page=1 local petTab="Equipped" local lastRevision=-1 local reduced=false local detailOpen=false local deleteConfirm=false
 local render local detail local pendingHatch=nil local open
@@ -27,10 +27,16 @@ local hud=HUD.New(gui,{Open=function(name) open(name) end,Rush=function() send(d
 local coins,rate,small=hud.Coins,hud.Rate,hud.Status
 local panel=frame(gui,"MainPanel",UDim2.new(.94,0,.77,0),UDim2.fromScale(.03,.16),palette.Cream) panel.Visible=false
 local limit=Instance.new("UISizeConstraint") limit.MaxSize=Vector2.new(1050,650) limit.Parent=panel
-panel.AnchorPoint=Vector2.new(.5,0) panel.Position=UDim2.fromScale(.5,.16)
+panel.AnchorPoint=Vector2.new(.5,.5) panel.Position=UDim2.fromScale(.5,.5)
+local function resizePanel()
+ local size=gui.AbsoluteSize
+ panel.Size=UDim2.fromOffset(math.min(1050,size.X-24),math.min(650,size.Y-24))
+end
+resizePanel() gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(resizePanel) task.defer(resizePanel)
+panel:GetPropertyChangedSignal("Visible"):Connect(function() hud.Root.Visible=not panel.Visible end)
 local titleBar=frame(panel,"TitleBar",UDim2.new(1,0,0,47),UDim2.new(),palette.Navy)
 local heading=label(titleBar,"MY PETS",UDim2.new(1,-80,1,0),UDim2.fromOffset(18,0),21,Color3.new(1,1,1)) heading.TextXAlignment=Enum.TextXAlignment.Left
-button(titleBar,"×",UDim2.fromOffset(36,32),UDim2.new(1,-44,0,7),function() panel.Visible=false detailOpen=false end,Color3.fromRGB(207,77,77))
+button(titleBar,"×",UDim2.fromOffset(44,44),UDim2.new(1,-46,0,1),function() panel.Visible=false detailOpen=false end,Color3.fromRGB(207,77,77))
 local subtitle=label(panel,"",UDim2.new(1,-24,0,41),UDim2.fromOffset(12,48),12)
 local content=frame(panel,"Content",UDim2.new(1,-24,1,-106),UDim2.fromOffset(12,94),palette.Cream)
 local list=Instance.new("ScrollingFrame") list.Name="Cards" list.Size=UDim2.fromScale(1,1) list.BackgroundTransparency=1 list.BorderSizePixel=0 list.ScrollBarThickness=5 list.AutomaticCanvasSize=Enum.AutomaticSize.Y list.CanvasSize=UDim2.new() list.Parent=content
@@ -92,18 +98,18 @@ render=function()
   local shown={} for _,pet in ipairs(data.Pets) do if petTab=="All pets" or pet.Equipped then table.insert(shown,pet) end end
   heading.Text="MY PETS • "..#data.Pets.." / 200" subtitle.Text=equipped.." / 3 equipped • Tap a pet to inspect • Page "..page.." / "..math.max(1,math.ceil(#shown/24))
   extras.Visible=true
-  for i,tab in ipairs({"Equipped","All pets"}) do button(extras,tab,UDim2.fromOffset(105,29),UDim2.fromOffset((i-1)*112,0),function() petTab=tab page=1 detailOpen=false render() end,petTab==tab and palette.Green or palette.Navy) end
-  button(extras,"Equip best",UDim2.fromOffset(100,29),UDim2.fromOffset(224,0),function() send("EquipBest") end,palette.Green)
-  button(extras,"‹ Previous",UDim2.fromOffset(96,29),UDim2.fromOffset(0,34),function() page=math.max(1,page-1) render() end)
-  button(extras,"Next ›",UDim2.fromOffset(80,29),UDim2.fromOffset(104,34),function() page=math.min(math.max(1,math.ceil(#shown/24)),page+1) render() end)
-  local gridWidth=mobile and width or width-290 list.Size=UDim2.new(0,gridWidth,1,-76) list.Position=UDim2.fromOffset(0,76)
-  configureGrid(gridWidth,114,164,5)
+  for i,tab in ipairs({"Equipped","All pets"}) do button(extras,tab,UDim2.new(1/3,-8,0,44),UDim2.new((i-1)/3,0,0,0),function() petTab=tab page=1 detailOpen=false render() end,petTab==tab and palette.Green or palette.Navy) end
+  button(extras,"Equip best",UDim2.new(1/3,-8,0,44),UDim2.new(2/3,0,0,0),function() send("EquipBest") end,palette.Green)
+  button(extras,"‹ Previous",UDim2.fromOffset(104,44),UDim2.fromOffset(0,52),function() page=math.max(1,page-1) render() end)
+  button(extras,"Next ›",UDim2.fromOffset(104,44),UDim2.fromOffset(116,52),function() page=math.min(math.max(1,math.ceil(#shown/24)),page+1) render() end)
+  local gridWidth=mobile and width or width-290 list.Size=UDim2.new(0,gridWidth,1,-104) list.Position=UDim2.fromOffset(0,104)
+  configureGrid(gridWidth,114,190,5)
   if not mobile or detailOpen then details.Visible=true details.Position=mobile and UDim2.fromOffset(0,0) or UDim2.new(1,-280,0,0) details.Size=mobile and UDim2.fromScale(1,1) or UDim2.new(0,280,1,0) if mobile then list.Visible=false extras.Visible=false end makeDetails() end
   for i=(page-1)*24+1,math.min(page*24,#shown) do local pet=shown[i] local s=C.Species[pet.Species] local f=card(s.Color)
    viewport(f,A.Pet(s,pet,C),UDim2.new(1,0,0,91),UDim2.new())
    label(f,s.Name,UDim2.new(1,-6,0,31),UDim2.fromOffset(3,88),12)
    label(f,C.Rarities[s.Rarity].." • Lv "..pet.Level,UDim2.new(1,-4,0,18),UDim2.fromOffset(2,119),10)
-   button(f,pet.Equipped and "✓ Equipped" or "Inspect",UDim2.new(1,-10,0,23),UDim2.fromOffset(5,137),function() selected=pet.Uid detailOpen=true deleteConfirm=false render() end,pet.Equipped and palette.Green or palette.Navy)
+   button(f,pet.Equipped and "✓ Equipped" or "Inspect",UDim2.new(1,-10,0,44),UDim2.fromOffset(5,137),function() selected=pet.Uid detailOpen=true deleteConfirm=false render() end,pet.Equipped and palette.Green or palette.Navy)
   end
   if petTab=="All pets" and page==1 then
    for key,reward in pairs(data.Inbox or {}) do
@@ -161,20 +167,27 @@ render=function()
   label(save,data.Mode.."\n"..(data.Mode=="Studio session" and "Studio progress stays in this running server." or "Account progress saves automatically."),UDim2.new(1,-20,0,112),UDim2.fromOffset(10,7),15)
   button(save,"Save progress",UDim2.new(1,-20,0,40),UDim2.fromOffset(10,128),function() send("Save") end,palette.Green)
   if Run:IsStudio() then local practice=card(Color3.fromRGB(233,215,248)) label(practice,"Studio Practice\nTest the Egg Rush arena with equal stats.",UDim2.new(1,-20,0,112),UDim2.fromOffset(10,7),15) button(practice,"Start practice round",UDim2.new(1,-20,0,40),UDim2.fromOffset(10,128),function() send("Practice") panel.Visible=false end) end
- elseif view=="Shop" then
+ elseif view=="Shop" or view=="Boosts" then
   heading.Text="FOREST SHOP" subtitle.Text="Your permanent farming multiplier: "..2^data.Tier.."× • Paid upgrades never affect Egg Rush"
   configureGrid(width,190,210,5)
+  if view=="Shop" then
   for i,u in ipairs(C.Upgrades) do local meta=data.Shop[i] or {} local owned=i<=data.Tier local available=meta.Available and i==data.Tier+1 local f=card(owned and Color3.fromRGB(169,217,176) or Color3.fromRGB(220,234,244))
    label(f,u.Multiplier.."×",UDim2.new(1,0,0,55),UDim2.fromOffset(0,12),35,palette.Blue)
    label(f,"Permanent farming\n"..(meta.Price and "R$ "..meta.Price or "Target R$ "..u.TargetPrice.." • not on sale"),UDim2.new(1,-16,0,65),UDim2.fromOffset(8,70),14)
    button(f,owned and "✓ Owned" or available and "Buy next upgrade" or "Coming Soon",UDim2.new(1,-20,0,39),UDim2.fromOffset(10,157),function() if available then send("BuyUpgrade",{Tier=i}) else notify(owned and "You already own this tier permanently." or "Roblox products must be configured before this tier can be sold.") end end,owned and palette.Green or palette.Navy)
   end
+  end
+  if view=="Boosts" then
+  heading.Text="BOOSTS" subtitle.Text="Your weather mutation boosters"
   for _,b in ipairs(C.Boosters) do local f=card(Color3.fromRGB(222,207,241))
    label(f,b.Name.."\n+"..math.floor(b.Bonus*100).." percentage points\n5 minutes • Owned "..(data.Boosters[b.Id] or 0),UDim2.new(1,-14,0,105),UDim2.fromOffset(7,12),16)
    label(f,"Direct weather hit required. Timer continues offline. Purchases Coming Soon.",UDim2.new(1,-12,0,42),UDim2.fromOffset(6,113),11)
    button(f,"Activate owned booster",UDim2.new(1,-20,0,38),UDim2.fromOffset(10,163),function() send("Boost",{Booster=b.Id}) end)
   end
+  end
+  if view=="Shop" then
   for _,info in ipairs({"EXCLUSIVE PETS\nPremium collection\nComing Soon","HUGE PETS\nAcquisition pending\nComing Soon","FUTURE UPGRADES\nThrough 1,048,576×\nComing Soon"}) do local f=card(palette.Navy) label(f,info,UDim2.fromScale(1,1),UDim2.new(),18,Color3.new(1,1,1)) end
+  end
  else
   heading.Text="YOUR LITTLE ADVENTURE" subtitle.Text=data.Mode.." • "..(data.Mode=="Studio session" and "Local playtest progress stays in this server" or "Progress is saved to your account")
   grid.CellSize=UDim2.new(1,-8,0,420)
@@ -188,10 +201,11 @@ panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() if panel.Visib
 remote.OnClientEvent:Connect(function(action,value)
  if action=="State" then
   local previous=data data=value coins.Text=B.Format(data.Coins) rate.Text=B.Format(data.Rate).." Coins / sec"
-  small.Text=C.Sectors[data.CurrentSector].." • "..data.Weather.." • "..2^data.Tier.."× • "..data.Mode
+  small.Visible=data.SaveError~=nil and data.SaveError~=false
   if data.SaveError then small.Text="Saving unavailable — existing progress protected. Retry shortly." end
   rushButton.Visible=data.Rush=="Registration" or data.InRush rushButton.Text=data.InRush and "Leave Rush" or "Join Rush"
-  help.Text=data.InRush and (data.Rush.." • "..data.RushTime.."s • "..data.BoxesLeft.." boxes • Hold "..math.floor(data.ClaimProgress*100).."%") or "Egg Rush in "..string.format("%02d:%02d",math.floor(data.RushTime/60),data.RushTime%60).." • Stand near treasure to farm"
+  local rushTime=string.format("%02d:%02d",math.floor(data.RushTime/60),data.RushTime%60)
+  help.Text=data.InRush and ("EGG RUSH • "..data.Rush.."\n"..rushTime.." • "..data.BoxesLeft.." boxes\nHold "..math.floor(data.ClaimProgress*100).."%") or ((data.Rush=="Registration" and "EGG RUSH • JOIN NOW" or "NEXT EGG RUSH").."\n"..rushTime)
   if panel.Visible and (not previous or previous.Revision~=data.Revision) then render() end
   for sector,gate in pairs((function() local out={} local world=workspace:FindFirstChild("MyLittlePets") if world then for s=2,5 do local zone=world:FindFirstChild("Sector"..s) local part=zone and zone:FindFirstChild("Gate"..s) if part then out[s]=part end end end return out end)()) do gate.LocalTransparencyModifier=sector<=data.Sector and 1 or 0 local prompt=gate:FindFirstChildOfClass("ProximityPrompt") if prompt then prompt.Enabled=sector>data.Sector end end
  elseif action=="Toast" then pendingHatch=nil notify(value)
